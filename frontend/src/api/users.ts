@@ -6,7 +6,7 @@ export async function getUsers() {
   return res.data;
 }
 
-export async function createUser(data: { username: string; password: string; role: string }) {
+export async function createUser(data: { username: string; password: string }) {
   return client.post('/users', data);
 }
 

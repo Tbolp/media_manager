@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Form, Input, Select, message } from 'antd';
+import { Modal, Form, Input, message } from 'antd';
 import { createUser } from '@/api/users';
 import { AxiosError } from 'axios';
 
@@ -52,19 +52,9 @@ export default function CreateUserModal({ open, onClose, onCreated }: Props) {
         <Form.Item
           name="password"
           label="密码"
-          rules={[{ required: true, message: '请输入密码' }]}
+          rules={[]}
         >
           <Input.Password />
-        </Form.Item>
-        <Form.Item
-          name="role"
-          label="角色"
-          rules={[{ required: true, message: '请选择角色' }]}
-        >
-          <Select placeholder="请选择">
-            <Select.Option value="user">普通用户</Select.Option>
-            <Select.Option value="admin">管理员</Select.Option>
-          </Select>
         </Form.Item>
       </Form>
     </Modal>

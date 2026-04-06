@@ -13,13 +13,13 @@ import (
 )
 
 type initRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username" binding:"required,min=1"`
+	Password string `json:"password"`
 }
 
 type loginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username" binding:"required,min=1"`
+	Password string `json:"password"`
 }
 
 // HandleInit creates the first admin user. Only works when no users exist.
@@ -72,7 +72,14 @@ func HandleLogin(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
+		},
+	})
 }
 
 // HandleLogout invalidates the current token by incrementing token_version.

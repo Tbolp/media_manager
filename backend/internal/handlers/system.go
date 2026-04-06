@@ -36,15 +36,15 @@ func HandleDashboard(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"media_total": mediaTotal,
-		"users":       users,
+		"total_media_count": mediaTotal,
+		"users":             users,
 	})
 }
 
 // HandleTasks returns the task center data from queue manager.
 func HandleTasks(c *gin.Context) {
 	if queueManager == nil {
-		c.JSON(http.StatusOK, gin.H{"libraries": []any{}})
+		c.JSON(http.StatusOK, gin.H{"items": []any{}})
 		return
 	}
 
@@ -55,11 +55,11 @@ func HandleTasks(c *gin.Context) {
 	}
 
 	type libraryTasks struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		CurrentTask   any    `json:"current_task"`
-		PendingCount  int    `json:"pending_count"`
-		RecentTasks   any    `json:"recent_tasks"`
+		LibraryID    string `json:"library_id"`
+		LibraryName  string `json:"library_name"`
+		CurrentTask  any    `json:"current_task"`
+		PendingCount int    `json:"pending_count"`
+		RecentTasks  any    `json:"recent_tasks"`
 	}
 
 	items := make([]libraryTasks, 0, len(libs))
@@ -67,8 +67,8 @@ func HandleTasks(c *gin.Context) {
 		current, recent, pending := queueManager.GetStatus(lib.ID)
 
 		item := libraryTasks{
-			ID:           lib.ID,
-			Name:         lib.Name,
+			LibraryID:    lib.ID,
+			LibraryName:  lib.Name,
 			CurrentTask:  current,
 			PendingCount: pending,
 			RecentTasks:  recent,
@@ -76,7 +76,7 @@ func HandleTasks(c *gin.Context) {
 		items = append(items, item)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"libraries": items})
+	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
 // HandleLogs returns paginated log entries with optional keyword filter.

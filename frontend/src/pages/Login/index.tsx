@@ -62,7 +62,7 @@ export default function LoginPage() {
           <Form.Item
             name="password"
             label="密码"
-            rules={[{ required: true, message: '请输入密码' }]}
+            rules={[]}
           >
             <Input.Password />
           </Form.Item>

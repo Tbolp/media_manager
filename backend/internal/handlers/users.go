@@ -13,12 +13,12 @@ import (
 )
 
 type createUserRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username string `json:"username" binding:"required,min=1"`
+	Password string `json:"password"`
 }
 
 type resetPasswordRequest struct {
-	Password string `json:"password" binding:"required"`
+	Password string `json:"password"`
 }
 
 type updatePermissionsRequest struct {

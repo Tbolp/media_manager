@@ -47,7 +47,7 @@ export default function ResetPasswordModal({ user, onClose, onSuccess }: Props) 
         <Form.Item
           name="password"
           label="新密码"
-          rules={[{ required: true, message: '请输入新密码' }]}
+          rules={[]}
         >
           <Input.Password />
         </Form.Item>
