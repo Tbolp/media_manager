@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Card, Form, Input, Button, Alert, Typography } from 'antd';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Card, Form, Input, Button, Alert, Typography, Spin } from 'antd';
 import { useAuthStore } from '@/stores/auth';
-import { login } from '@/api/auth';
+import { login, getInitStatus } from '@/api/auth';
 import { AxiosError } from 'axios';
 
 const { Title } = Typography;
@@ -17,7 +17,20 @@ export default function LoginPage() {
   const location = useLocation();
   const { setAuth, authErrorMessage, clearAuthError } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // mount 时检查系统是否已初始化，未初始化则跳转 /init
+  useEffect(() => {
+    getInitStatus()
+      .then((initialized) => {
+        if (!initialized) {
+          navigate('/init', { replace: true });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setChecking(false));
+  }, [navigate]);
 
   // 读取 authErrorMessage（401 被踢出时的提示）
   useEffect(() => {
@@ -42,6 +55,14 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -72,9 +93,6 @@ export default function LoginPage() {
             </Button>
           </Form.Item>
         </Form>
-        <div style={{ textAlign: 'center' }}>
-          <Link to="/init">首次使用？初始化系统</Link>
-        </div>
       </Card>
     </div>
   );

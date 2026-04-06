@@ -9,13 +9,13 @@ dev:
 	@echo "    Ctrl+C 停止所有服务"
 	@echo ""
 	@trap 'kill 0; exit 0' INT TERM; \
-	(cd backend && $(GO) run ./cmd/server) & \
+	(cd backend && DATA_DIR=./data $(GO) run ./cmd/server) & \
 	(cd frontend && npx vite --port 3000) & \
 	wait
 
 # 仅启动后端
 dev-backend:
-	cd backend && $(GO) run ./cmd/server
+	cd backend && DATA_DIR=./data $(GO) run ./cmd/server
 
 # 仅启动前端
 dev-frontend:

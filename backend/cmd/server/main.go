@@ -100,6 +100,7 @@ func setupRoutes(r *gin.Engine) {
 	})
 
 	// ── Public routes ──
+	r.GET("/api/init/status", handlers.HandleInitStatus)
 	r.POST("/api/init", handlers.HandleInit)
 	r.POST("/api/login", handlers.HandleLogin)
 

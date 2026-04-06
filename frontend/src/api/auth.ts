@@ -1,6 +1,11 @@
 import client from './client';
 import type { InitRequest, LoginRequest, LoginResponse } from './types';
 
+export async function getInitStatus(): Promise<boolean> {
+  const res = await client.get<{ initialized: boolean }>('/init/status');
+  return res.data.initialized;
+}
+
 export async function init(data: InitRequest) {
   return client.post('/init', data);
 }

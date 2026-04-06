@@ -22,6 +22,16 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+// HandleInitStatus returns whether the system has been initialized.
+func HandleInitStatus(c *gin.Context) {
+	count, err := services.CountUsers()
+	if err != nil {
+		core.RespondInternalError(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"initialized": count > 0})
+}
+
 // HandleInit creates the first admin user. Only works when no users exist.
 func HandleInit(c *gin.Context) {
 	count, err := services.CountUsers()
