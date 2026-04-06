@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button, message, Spin } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import Player from 'xgplayer';
+import { useParams, useLocation } from 'react-router-dom';
+import { message, Spin, Typography } from 'antd';
+import Player from 'xgplayer/es/index.umd.js';
+import 'xgplayer/dist/index.min.css';
 import { useAuthStore } from '@/stores/auth';
 import { getStreamUrl, getProgress } from '@/api/playback';
 import { useProgressReporter } from '@/hooks/useProgress';
 
 export default function PlayerPage() {
-  const { id: libraryId, fid } = useParams<{ id: string; fid: string }>();
-  const navigate = useNavigate();
+  const { fid } = useParams<{ id: string; fid: string }>();
+  const location = useLocation();
   const token = useAuthStore((s) => s.token);
+  const title = (location.state as { title?: string })?.title ?? '播放中';
 
   const playerRef = useRef<Player | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,9 +44,8 @@ export default function PlayerPage() {
       startTime: initialPositionRef.current,
       playbackRate: [0.5, 0.75, 1, 1.25, 1.5, 2],
       volume: 0.8,
-      width: '100%',
-      height: '100%',
-      fluid: true,
+      width: 800,
+      height: 450,
     });
 
     playerRef.current = player;
@@ -62,13 +62,7 @@ export default function PlayerPage() {
 
   return (
     <div>
-      <Button
-        icon={<ArrowLeftOutlined />}
-        style={{ marginBottom: 16 }}
-        onClick={() => navigate(`/library/${libraryId}`)}
-      >
-        返回
-      </Button>
+      <Typography.Title level={4} style={{ marginBottom: 16 }}>{title}</Typography.Title>
       {!ready ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
           <Spin size="large" />
@@ -76,7 +70,7 @@ export default function PlayerPage() {
       ) : (
         <div
           ref={containerRef}
-          style={{ width: '100%', maxWidth: 960, margin: '0 auto', background: '#000' }}
+          style={{ margin: '0 auto', background: '#000', width: 'fit-content' }}
         />
       )}
     </div>

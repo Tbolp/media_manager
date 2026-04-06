@@ -22,12 +22,6 @@ func RequireLibraryAccess() gin.HandlerFunc {
 			return
 		}
 
-		// Admin bypasses whitelist
-		if user.Role == "admin" {
-			c.Next()
-			return
-		}
-
 		// Determine library_id from path params
 		libraryID := c.Param("id")
 		if libraryID == "" {
@@ -61,6 +55,12 @@ func RequireLibraryAccess() gin.HandlerFunc {
 		if isDeleted {
 			core.RespondNotFound(c, "媒体库不存在")
 			c.Abort()
+			return
+		}
+
+		// Admin bypasses whitelist check (but still validated library exists above)
+		if user.Role == "admin" {
+			c.Next()
 			return
 		}
 

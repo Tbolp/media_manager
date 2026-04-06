@@ -142,6 +142,7 @@ export default function UsersPage() {
           expandedRowRender: (record) => (
             <PermissionPanel userId={record.id} libraryIds={record.library_ids} />
           ),
+          rowExpandable: (record) => record.role !== 'admin',
         }}
       />
 

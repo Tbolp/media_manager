@@ -37,7 +37,7 @@ export default function FileList({
 
   const handleFileClick = (file: FileItem) => {
     if (file.file_type === 'video') {
-      navigate(`/library/${libraryId}/play/${file.id}`);
+      navigate(`/library/${libraryId}/play/${file.id}`, { state: { title: file.filename } });
     } else if (file.file_type === 'image') {
       onImageClick(file.id);
     }
