@@ -33,7 +33,19 @@ export default function InlinePlayer({ file, onClose }: Props) {
   // 进度上报（复用 useProgressReporter，接口兼容 { currentTime, duration, paused }）
   useProgressReporter(file.id, videoRef);
 
-  // 设置初始播放位置
+  // 组件卸载时释放视频资源，防止内存泄漏
+  useEffect(() => {
+    return () => {
+      const video = videoRef.current;
+      if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load(); // 强制释放已缓冲的数据
+      }
+    };
+  }, []);
+
+  // 设置初始播放位置并确保自动播放
   useEffect(() => {
     const video = videoRef.current;
     if (!ready || !video) return;
@@ -42,13 +54,18 @@ export default function InlinePlayer({ file, onClose }: Props) {
       if (initialPositionRef.current > 0) {
         video.currentTime = initialPositionRef.current;
       }
+      // 尝试自动播放
+      video.play().catch(() => {
+        // 浏览器阻止了自动播放，静音后重试
+        video.muted = true;
+        video.play().catch(() => {});
+      });
     };
 
     video.addEventListener('loadedmetadata', onLoadedMetadata);
 
-    // 如果 metadata 已加载（缓存命中）
-    if (video.readyState >= 1 && initialPositionRef.current > 0) {
-      video.currentTime = initialPositionRef.current;
+    if (video.readyState >= 1) {
+      onLoadedMetadata();
     }
 
     return () => {

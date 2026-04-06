@@ -14,9 +14,10 @@ export function useProgressReporter(fid: string, playerRef: React.RefObject<Play
 
   // 定时上报（每 15 秒）
   useEffect(() => {
+    if (!fid) return;
     const timer = setInterval(() => {
       const player = playerRef.current;
-      if (player && !player.paused) {
+      if (player && !player.paused && player.duration > 0) {
         reportProgress(fid, player.currentTime, player.duration).catch(() => {});
         lastReportedRef.current = player.currentTime;
       }
@@ -26,6 +27,7 @@ export function useProgressReporter(fid: string, playerRef: React.RefObject<Play
 
   // 离开时上报
   useEffect(() => {
+    if (!fid) return;
     const report = () => {
       const player = playerRef.current;
       if (!player) return;

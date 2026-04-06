@@ -64,6 +64,8 @@ export default function FileList({
                   alt={file.filename}
                   className={styles.thumbnailImg}
                   loading="lazy"
+                  decoding="async"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
               ) : (
                 <div className={styles.noThumb}>
