@@ -55,6 +55,22 @@ html, body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* antd Modal 确认弹窗文字颜色 */
+.ant-modal-confirm-title,
+.ant-modal-confirm-content,
+.ant-modal-title,
+.ant-modal-body {
+  color: #f8fafc !important;
+}
+
+.ant-modal-close {
+  color: rgba(248, 250, 252, 0.5) !important;
+}
+
+.ant-modal-close:hover {
+  color: #f8fafc !important;
+}
+
 /* antd Table 暗色背景统一 */
 .ant-table,
 .ant-table-container,
