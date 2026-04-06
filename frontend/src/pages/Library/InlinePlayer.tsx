@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Spin, message } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-import Player from 'xgplayer/es/index.umd.js';
-import 'xgplayer/dist/index.min.css';
 import { useAuthStore } from '@/stores/auth';
 import { getStreamUrl, getProgress } from '@/api/playback';
 import { useProgressReporter } from '@/hooks/useProgress';
@@ -16,8 +14,7 @@ interface Props {
 
 export default function InlinePlayer({ file, onClose }: Props) {
   const token = useAuthStore((s) => s.token);
-  const playerRef = useRef<Player | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [ready, setReady] = useState(false);
   const initialPositionRef = useRef(0);
 
@@ -33,35 +30,35 @@ export default function InlinePlayer({ file, onClose }: Props) {
       });
   }, [file.id]);
 
-  // 进度上报
-  useProgressReporter(file.id, playerRef);
+  // 进度上报（复用 useProgressReporter，接口兼容 { currentTime, duration, paused }）
+  useProgressReporter(file.id, videoRef);
 
-  // 创建播放器
+  // 设置初始播放位置
   useEffect(() => {
-    if (!ready || !token || !containerRef.current) return;
+    const video = videoRef.current;
+    if (!ready || !video) return;
 
-    const player = new Player({
-      el: containerRef.current,
-      url: getStreamUrl(file.id, token),
-      startTime: initialPositionRef.current,
-      playbackRate: [0.5, 0.75, 1, 1.25, 1.5, 2],
-      volume: 0.8,
-      width: '100%',
-      height: '100%',
-      fluid: true,
-    });
+    const onLoadedMetadata = () => {
+      if (initialPositionRef.current > 0) {
+        video.currentTime = initialPositionRef.current;
+      }
+    };
 
-    playerRef.current = player;
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
 
-    player.on('error', () => {
-      message.error('播放失败，请稍后再试');
-    });
+    // 如果 metadata 已加载（缓存命中）
+    if (video.readyState >= 1 && initialPositionRef.current > 0) {
+      video.currentTime = initialPositionRef.current;
+    }
 
     return () => {
-      player.destroy();
-      playerRef.current = null;
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
     };
-  }, [file.id, ready, token]);
+  }, [file.id, ready]);
+
+  const handleError = () => {
+    message.error('播放失败，请稍后再试');
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -80,7 +77,16 @@ export default function InlinePlayer({ file, onClose }: Props) {
           <Spin size="large" />
         </div>
       ) : (
-        <div ref={containerRef} className={styles.playerContainer} />
+        <video
+          ref={videoRef}
+          className={styles.video}
+          src={token ? getStreamUrl(file.id, token) : undefined}
+          controls
+          autoPlay
+          playsInline
+          preload="metadata"
+          onError={handleError}
+        />
       )}
     </div>
   );

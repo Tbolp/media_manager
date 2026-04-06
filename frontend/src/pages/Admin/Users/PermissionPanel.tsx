@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Checkbox, Spin } from 'antd';
 import { getLibraries } from '@/api/libraries';
 import { updatePermissions } from '@/api/users';
@@ -13,6 +13,13 @@ export default function PermissionPanel({ userId, libraryIds }: Props) {
   const [allLibraries, setAllLibraries] = useState<Library[]>([]);
   const [selected, setSelected] = useState<string[]>(libraryIds);
   const [loading, setLoading] = useState(true);
+  const lastSavedRef = useRef<string[]>(libraryIds);
+
+  // 同步外部 prop 变化
+  useEffect(() => {
+    setSelected(libraryIds);
+    lastSavedRef.current = libraryIds;
+  }, [libraryIds]);
 
   useEffect(() => {
     getLibraries()
@@ -22,12 +29,14 @@ export default function PermissionPanel({ userId, libraryIds }: Props) {
   }, []);
 
   const handleChange = async (checkedValues: string[]) => {
+    const previous = lastSavedRef.current;
     setSelected(checkedValues);
     try {
       await updatePermissions(userId, checkedValues);
+      lastSavedRef.current = checkedValues;
     } catch {
-      // 静默失败，恢复原值
-      setSelected(libraryIds);
+      // 失败时恢复到上次成功保存的值
+      setSelected(previous);
     }
   };
 
