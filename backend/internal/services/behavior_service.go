@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"media-manager/internal/database"
+	"media-manager/internal/models"
 )
 
 // UpsertProgress updates or inserts a playback progress record.
@@ -98,4 +99,20 @@ func GetWatchHistory(userID string, page, pageSize int) ([]WatchHistoryItem, int
 	}
 
 	return items, total, nil
+}
+
+// GetFileProgress returns the playback progress for a given user and file.
+// Returns nil if no progress record exists.
+func GetFileProgress(userID, fileID string) (*models.PlaybackProgress, error) {
+	var progress models.PlaybackProgress
+	err := database.AppDB.Get(&progress,
+		"SELECT * FROM playback_progress WHERE user_id = ? AND file_id = ?",
+		userID, fileID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &progress, nil
 }

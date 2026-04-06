@@ -44,6 +44,38 @@ func HandleReportProgress(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"detail": "已记录"})
 }
 
+// HandleGetProgress returns the current user's playback progress for a file.
+func HandleGetProgress(c *gin.Context) {
+	user := middleware.GetCurrentUser(c)
+	if user == nil {
+		core.RespondUnauthorized(c, "未认证", core.ErrCodeTokenExpired)
+		return
+	}
+
+	fileID := c.Param("fid")
+
+	progress, err := services.GetFileProgress(user.ID, fileID)
+	if err != nil {
+		core.RespondInternalError(c)
+		return
+	}
+
+	if progress == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"position":   0,
+			"duration":   0,
+			"is_watched": false,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"position":   progress.Position,
+		"duration":   progress.Duration,
+		"is_watched": progress.IsWatched,
+	})
+}
+
 // HandleGetHistory returns the user's watch history.
 func HandleGetHistory(c *gin.Context) {
 	user := middleware.GetCurrentUser(c)

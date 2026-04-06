@@ -148,6 +148,7 @@ func setupRoutes(r *gin.Engine) {
 		fileAccess.GET("/api/files/:fid/stream", handlers.HandleStream)
 		fileAccess.GET("/api/files/:fid/raw", handlers.HandleRawImage)
 		fileAccess.GET("/api/files/:fid/thumbnail", handlers.HandleThumbnail)
+		fileAccess.GET("/api/files/:fid/progress", handlers.HandleGetProgress)
 		fileAccess.PUT("/api/files/:fid/progress", handlers.HandleReportProgress)
 	}
 }

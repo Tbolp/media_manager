@@ -31,14 +31,20 @@ func GetCurrentUser(c *gin.Context) *models.User {
 // token version against the database, and injects the User into the context.
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Extract token from "Authorization: Bearer <token>"
+		// Extract token: prefer "Authorization: Bearer <token>" header,
+		// fall back to "?token=<jwt>" query parameter (for video/image tags).
+		var tokenString string
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+		} else {
+			tokenString = c.Query("token")
+		}
+		if tokenString == "" {
 			core.RespondUnauthorized(c, "缺少认证令牌", core.ErrCodeTokenExpired)
 			c.Abort()
 			return
 		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		// Parse JWT
 		claims, err := core.ParseToken(tokenString, config.C.JWTSecret)
