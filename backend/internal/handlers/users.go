@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -35,23 +36,29 @@ func HandleListUsers(c *gin.Context) {
 
 	// Build response items
 	type userItem struct {
-		ID         string  `json:"id"`
-		Username   string  `json:"username"`
-		Role       string  `json:"role"`
-		IsDisabled bool    `json:"is_disabled"`
-		LibraryIDs string  `json:"library_ids"`
-		CreatedAt  string  `json:"created_at"`
-		LastActiveAt *string `json:"last_active_at"`
+		ID           string   `json:"id"`
+		Username     string   `json:"username"`
+		Role         string   `json:"role"`
+		IsDisabled   bool     `json:"is_disabled"`
+		LibraryIDs   []string `json:"library_ids"`
+		CreatedAt    string   `json:"created_at"`
+		LastActiveAt *string  `json:"last_active_at"`
 	}
 
 	items := make([]userItem, 0, len(users))
 	for _, u := range users {
+		var libIDs []string
+		_ = json.Unmarshal([]byte(u.LibraryIDs), &libIDs)
+		if libIDs == nil {
+			libIDs = []string{}
+		}
+
 		item := userItem{
 			ID:         u.ID,
 			Username:   u.Username,
 			Role:       u.Role,
 			IsDisabled: u.IsDisabled,
-			LibraryIDs: u.LibraryIDs,
+			LibraryIDs: libIDs,
 			CreatedAt:  u.CreatedAt.Format("2006-01-02T15:04:05Z"),
 		}
 		if u.LastActiveAt.Valid {
