@@ -418,10 +418,13 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 | GET | `/api/files/{fid}/raw` | 原图 |
 | GET | `/api/files/{fid}/thumbnail` | 缩略图（~400px，磁盘缓存） |
 
+> 播放类接口同时支持 `Authorization: Bearer <token>` 请求头和 `?token=<jwt>` 查询参数两种鉴权方式。前端播放器/`<img>` 标签等无法设置请求头的场景使用 query 参数方式。AuthMiddleware 优先读取 Header，Header 缺失时回退读取 query 参数。
+
 ### 用户行为
 | 方法 | 路径 | 描述 |
 |------|------|------|
 | PUT | `/api/files/{fid}/progress` | 上报播放进度 |
+| GET | `/api/files/{fid}/progress` | 获取当前用户对该文件的播放进度（用于播放页续播） |
 | GET | `/api/behavior/history` | 最近观看历史 |
 
 ### 系统运维（需 admin）

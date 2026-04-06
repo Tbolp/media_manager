@@ -61,6 +61,7 @@ frontend/
     │
     ├── components/           # 通用 UI 组件
     │   ├── AppLayout.tsx     # 全局布局（顶部导航栏 + 侧边栏 + 内容区）
+    │   ├── ErrorBoundary.tsx # 全局错误边界，捕获渲染崩溃，展示降级 UI
     │   ├── AuthGuard.tsx     # 路由守卫组件（检查登录态）
     │   ├── AdminGuard.tsx    # 管理员路由守卫
     │   ├── RefreshStatus.tsx # 刷新状态条（可复用于首页卡片和详情页）
@@ -98,6 +99,7 @@ frontend/
     │
     └── utils/
         ├── constants.ts      # 错误码映射、分页默认值等
+        ├── debounce.ts       # 自实现 debounce 工具函数，避免引入 lodash
         ├── format.ts         # 时长格式化、文件大小格式化
         └── path.ts           # 路径拼接/解析辅助函数
 ```
@@ -117,7 +119,7 @@ import { useAuthStore } from '@/stores/auth';
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE, // "/api"
-  timeout: 30000,
+  timeout: 30000, // 默认 30s，上传接口单独设置 timeout: 0（无限制）
 });
 
 // 请求拦截器：注入 Authorization header
@@ -169,10 +171,12 @@ interface AuthState {
   user: User | null;
   isLoggedIn: boolean;
   isAdmin: boolean;
+  authErrorMessage: string | null;  // 401 错误提示信息
 
   setAuth: (token: string, user: User) => void;
   clearAuth: () => void;
   handleUnauthorized: (errorCode?: string) => void;
+  clearAuthError: () => void;  // Login 页读取后清除
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -182,30 +186,37 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isLoggedIn: false,
       isAdmin: false,
+      authErrorMessage: null,
 
       setAuth: (token, user) =>
-        set({ token, user, isLoggedIn: true, isAdmin: user.role === 'admin' }),
+        set({ token, user, isLoggedIn: true, isAdmin: user.role === 'admin', authErrorMessage: null }),
 
       clearAuth: () =>
         set({ token: null, user: null, isLoggedIn: false, isAdmin: false }),
 
+      clearAuthError: () => set({ authErrorMessage: null }),
+
       handleUnauthorized: (errorCode) => {
-        get().clearAuth();
-        // 跳转逻辑由 AuthGuard 组件负责
-        // 通过 event 或 zustand subscribe 触发
         const messages: Record<string, string> = {
           token_expired: '登录已过期，请重新登录',
           user_disabled: '账号已被停用，请联系管理员',
           user_deleted: '账号不存在，请联系管理员',
         };
         const msg = messages[errorCode ?? ''] ?? '登录已失效，请重新登录';
-        // 使用 antd message 全局提示
-        window.__AUTH_ERROR_MESSAGE__ = msg;
+        get().clearAuth();
+        set({ authErrorMessage: msg });
       },
     }),
     {
       name: 'auth-storage', // localStorage key
       partialize: (state) => ({ token: state.token, user: state.user }),
+      // 从 localStorage 恢复后，重新计算派生状态
+      onRehydrateStorage: () => (state) => {
+        if (state?.token && state?.user) {
+          state.isLoggedIn = true;
+          state.isAdmin = state.user.role === 'admin';
+        }
+      },
     }
   )
 );
@@ -233,8 +244,8 @@ const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    // 需登录的路由
-    element: <AuthGuard><AppLayout /></AuthGuard>,
+    // 需登录的路由，外层包裹 ErrorBoundary 防止渲染崩溃白屏
+    element: <ErrorBoundary><AuthGuard><AppLayout /></AuthGuard></ErrorBoundary>,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'library/:id', element: <LibraryPage /> },
@@ -274,8 +285,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 // components/AdminGuard.tsx
 function AdminGuard() {
   const { isAdmin } = useAuthStore();
+  const navigated = useRef(false);
+
+  useEffect(() => {
+    if (!isAdmin && !navigated.current) {
+      message.warning('无权访问');
+      navigated.current = true;
+    }
+  }, [isAdmin]);
+
   if (!isAdmin) {
-    message.warning('无权访问');
     return <Navigate to="/" replace />;
   }
   return <Outlet />;
@@ -283,9 +302,10 @@ function AdminGuard() {
 ```
 
 **`/init` 页面访问控制**：
-- `/init` 页面在 mount 时调用一个轻量接口（如 `POST /api/init` 本身会返回 403/409 当已有用户时），或专用检查接口。
-- 若系统已有用户 → 自动跳转 `/login`。
-- 实现方式：页面 mount 时尝试调用后端，由返回状态码决定是否渲染表单。
+- 页面 mount 时直接渲染初始化表单。
+- 用户提交时调用 `POST /api/init { username, password }`。
+- 若后端返回 409（系统已初始化，即已存在用户） → 自动跳转 `/login`，提示"系统已初始化，请直接登录"。
+- 成功 → 跳转 `/login`。
 
 ### 3.4 通用轮询 Hook
 
@@ -327,7 +347,7 @@ export function usePolling(
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [intervalMs, enabled]);
+  }, [intervalMs, enabled]); // enabled 变化时重新启动/停止轮询
 }
 ```
 
@@ -341,7 +361,7 @@ export function usePolling(
 
 **组件结构**：
 - 居中卡片布局，Ant Design `Form` 表单：用户名、密码、确认密码。
-- 页面 mount 时调用 `POST /api/init` 的预检（或捕获已有用户的错误码），决定是否跳转 `/login`。
+- 无 mount 预检，直接渲染表单。
 
 **交互逻辑**：
 1. 前端校验：密码一致性检查。
@@ -349,13 +369,13 @@ export function usePolling(
 3. 成功 → `message.success('管理员账号创建成功')` → 跳转 `/login`。
 4. 失败 → 根据错误提示（用户名已存在等）。
 
-**实现方式**：页面 mount 时先调用 `GET /api/libraries`（无 token）会返回 401，但 `POST /api/init` 若已有用户会返回特定错误。更简洁的方案：直接渲染表单，提交时如果后端返回"已初始化"的错误则跳转 `/login`。
+**实现方式**：直接渲染表单，提交时如果后端返回 409（已初始化）则跳转 `/login` 并提示。无需 mount 时预检。
 
 ### 4.2 登录页 `/login`（`pages/Login/index.tsx`）
 
 **组件结构**：
 - 居中卡片布局，Ant Design `Form`：用户名、密码。
-- 检查 URL 参数或 `window.__AUTH_ERROR_MESSAGE__` 显示 401 提示信息。
+- 检查 URL 参数或 `useAuthStore` 中的 `authErrorMessage` 显示 401 提示信息，读取后调用 `clearAuthError()` 清除。
 
 **交互逻辑**：
 1. 调用 `POST /api/login { username, password }`。
@@ -405,20 +425,21 @@ LibraryPage
 └── 空状态提示
 ```
 
-**状态管理**（页面内 `useState`/`useReducer`）：
-- `currentPath: string`（当前目录路径，从 URL search params `?path=` 读取）
-- `searchQuery: string`（搜索关键字，从 URL search params `?q=` 读取）
-- `page: number`
-- `files: FileItem[]`、`dirs: string[]`
+**状态管理**（目录路径、搜索关键字、分页均通过 URL search params 同步，刷新不丢失）：
+- `currentPath`：从 `searchParams.get('path')` 读取
+- `searchQuery`：从 `searchParams.get('q')` 读取
+- `page`：从 `searchParams.get('page')` 读取，默认 1
+- `files: FileItem[]`、`dirs: string[]`：页面内 state
 
 **数据获取**：
 ```typescript
-// 使用 URL search params 同步目录路径和搜索状态
+// 使用 URL search params 同步目录路径、搜索状态和分页
 const [searchParams, setSearchParams] = useSearchParams();
 const currentPath = searchParams.get('path') || '';
 const searchQuery = searchParams.get('q') || '';
+const page = Number(searchParams.get('page') || '1');
 
-// 调用文件列表 API
+// 调用文件列表 API（useFileList 为页面内封装的自定义 hook，内部使用 useEffect + useState 实现请求和状态管理）
 const { data, isLoading } = useFileList(libraryId, {
   path: searchQuery ? undefined : currentPath,
   q: searchQuery || undefined,
@@ -428,9 +449,9 @@ const { data, isLoading } = useFileList(libraryId, {
 ```
 
 **目录导航**：
-- 点击子目录 → `setSearchParams({ path: currentPath + '/' + dirName })`
-- 面包屑点击 → `setSearchParams({ path: targetPath })`
-- 路径变化触发重新请求文件列表
+- 点击子目录 → `setSearchParams({ path: currentPath + '/' + dirName })`（page 重置为 1）
+- 面包屑点击 → `setSearchParams({ path: targetPath })`（page 重置为 1）
+- `setSearchParams` 使用替换模式（非 merge），切换目录/搜索时自动清除无关参数
 
 **搜索**：
 - 输入关键字 → debounce 300ms → `setSearchParams({ q: keyword })`
@@ -453,19 +474,44 @@ PlayerPage
 ```typescript
 import Player from 'xgplayer';
 
+const playerRef = useRef<Player | null>(null);
+const containerRef = useRef<HTMLDivElement>(null);
+const token = useAuthStore((s) => s.token);
+const [ready, setReady] = useState(false);
+const initialPositionRef = useRef(0);
+
+// 页面 mount 时获取上次播放进度（用于续播），完成后标记 ready
 useEffect(() => {
+  client.get(`/files/${fid}/progress`).then((res) => {
+    initialPositionRef.current = res.data.position ?? 0;
+  }).catch(() => {}).finally(() => {
+    setReady(true);
+  });
+}, [fid]);
+
+// 进度上报 hook，接收 playerRef
+useProgressReporter(fid, playerRef);
+
+// ready 后再创建播放器，确保续播位置已就绪
+useEffect(() => {
+  if (!ready) return;
   const player = new Player({
-    el: playerRef.current,
-    url: `/api/files/${fid}/stream`,
-    // 从上次进度续播
-    startTime: initialProgress?.position || 0,
+    el: containerRef.current,
+    // 视频流 URL 通过 query 参数携带 token，因为播放器直接发起请求不走 Axios 拦截器
+    url: `/api/files/${fid}/stream?token=${token}`,
+    // 从上次进度续播（通过 GET /api/files/{fid}/progress 获取）
+    startTime: initialPositionRef.current,
     // 播放器配置
     playbackRate: [0.5, 0.75, 1, 1.25, 1.5, 2],
     volume: 0.8,
   });
+  playerRef.current = player;
 
-  return () => player.destroy();
-}, [fid]);
+  return () => {
+    player.destroy();
+    playerRef.current = null;
+  };
+}, [fid, ready]);
 ```
 
 **进度上报**（详见 5.3 节）：
@@ -512,7 +558,7 @@ SystemPage
 │   │   └── 各媒体库的任务状态列表
 │   │       ├── 媒体库名称
 │   │       ├── 当前执行中任务
-│   │       ├── 待执行任务队列
+│   │       ├── 待执行任务数量
 │   │       └── 最近完成任务
 │   └── Tab 3: Logs
 │       ├── 关键字筛选输入框
@@ -568,6 +614,7 @@ export async function uploadFile(
     file, // 直接发送 File 对象作为 body（application/octet-stream）
     {
       params: { path },
+      timeout: 0, // 上传不设超时，由 AbortController 控制取消
       headers: {
         'Content-Type': 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
@@ -597,12 +644,13 @@ interface UploadState {
   uploads: Record<string, {  // key: libraryId
     fileName: string;
     progress: number;       // 0-100
-    status: 'uploading' | 'success' | 'failed';
+    status: 'uploading' | 'success' | 'failed' | 'cancelled';
     abortController?: AbortController;
   }>;
   startUpload: (libraryId: string, fileName: string, ac: AbortController) => void;
   updateProgress: (libraryId: string, progress: number) => void;
   finishUpload: (libraryId: string, status: 'success' | 'failed') => void;
+  cancelUpload: (libraryId: string) => void;  // 调用 abortController.abort() 并设置 cancelled 状态
   clearUpload: (libraryId: string) => void;
 }
 ```
@@ -611,8 +659,8 @@ interface UploadState {
 
 ```typescript
 // hooks/useProgress.ts
-export function useProgressReporter(fid: string) {
-  const playerRef = useRef<Player | null>(null);
+// 接收外部传入的 player 实例引用，避免与 PlayerPage 中创建的播放器断裂
+export function useProgressReporter(fid: string, playerRef: React.RefObject<Player | null>) {
   const lastReportedRef = useRef<number>(0);
 
   // 定时上报（每 15 秒）
@@ -625,7 +673,7 @@ export function useProgressReporter(fid: string) {
       }
     }, 15000);
     return () => clearInterval(timer);
-  }, [fid]);
+  }, [fid, playerRef]);
 
   // 离开时上报
   useEffect(() => {
@@ -672,9 +720,7 @@ export function useProgressReporter(fid: string) {
       window.removeEventListener('beforeunload', report);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [fid]);
-
-  return playerRef;
+  }, [fid, playerRef]);
 }
 ```
 
@@ -732,6 +778,8 @@ function DirBreadcrumb({ libraryName, currentPath, onNavigate }: Props) {
 
 ```typescript
 // pages/Library/SearchBar.tsx
+import { debounce } from '@/utils/debounce';
+
 function SearchBar({ onSearch }: { onSearch: (q: string) => void }) {
   const [value, setValue] = useState('');
 
@@ -771,7 +819,7 @@ import 'yet-another-react-lightbox/styles.css';
 
 function ImageLightbox({ images, index, open, onClose }: Props) {
   const slides = images.map((img) => ({
-    src: `/api/files/${img.id}/raw`, // 原图接口
+    src: `/api/files/${img.id}/raw?token=${useAuthStore.getState().token}`, // 原图接口，query 传 token
   }));
 
   return (
@@ -786,14 +834,20 @@ function ImageLightbox({ images, index, open, onClose }: Props) {
 }
 ```
 
-**缩略图**：在文件列表中，图片类型文件使用 `<img src="/api/files/${fid}/thumbnail" />` 展示缩略图。添加 `loading="lazy"` 实现懒加载。
+**缩略图**：在文件列表中，图片类型文件使用 `<img src="/api/files/${fid}/thumbnail?token=${token}" />` 展示缩略图（token 通过 query 参数传递，因 `<img>` 标签无法设置请求头）。添加 `loading="lazy"` 实现懒加载。
 
 ### 5.7 刷新状态轮询
 
 ```typescript
 // components/RefreshStatus.tsx
-function RefreshStatus({ libraryId, onRefreshComplete }: Props) {
-  const [status, setStatus] = useState<'idle' | 'running' | 'pending'>('idle');
+// initialStatus 由父组件传入，支持外部触发刷新后立即切换状态启动轮询
+function RefreshStatus({ libraryId, initialStatus = 'idle', onRefreshComplete }: Props) {
+  const [status, setStatus] = useState<'idle' | 'running' | 'pending'>(initialStatus);
+
+  // 父组件通过更新 initialStatus prop 触发状态变化（如手动刷新后传入 'running'）
+  useEffect(() => {
+    setStatus(initialStatus);
+  }, [initialStatus]);
 
   usePolling(
     async () => {
@@ -880,6 +934,7 @@ function AppLayout() {
 - **Loading**：操作按钮点击后显示 loading 状态（antd Button `loading` prop）。
 - **全局错误**：Axios 拦截器中 5xx 错误使用 `message.error('服务异常，请稍后再试')`。
 - **网络断开**：监听 `window.offline` 事件，使用 `notification.warning` 持久提示。
+- **渲染崩溃**：`ErrorBoundary` 组件捕获子组件渲染异常，展示"页面出错了"+ "刷新页面"按钮，避免白屏。包裹在 `AuthGuard` 外层，覆盖所有登录后的页面。
 
 ### 6.3 响应式适配
 
@@ -1134,6 +1189,12 @@ export interface FileItem {
   is_watched: boolean | null;
 }
 
+export interface FileProgress {
+  position: number;    // 当前播放秒数
+  duration: number;    // 视频总时长
+  is_watched: boolean;
+}
+
 export interface FileListResponse {
   path?: string;
   dirs?: string[];
@@ -1166,7 +1227,7 @@ export interface DashboardData {
 export interface TaskInfo {
   task_type: 'full' | 'targeted';
   target_file?: string;
-  status: 'running' | 'pending' | 'success' | 'failed';
+  status: 'running' | 'success' | 'failed';  // 仅已执行/已完成任务有此状态
   started_at?: string;
   finished_at?: string;
   error?: string;
@@ -1175,9 +1236,9 @@ export interface TaskInfo {
 export interface LibraryTasks {
   library_id: string;
   library_name: string;
-  current_task: TaskInfo | null;
-  pending_tasks: TaskInfo[];
-  recent_tasks: TaskInfo[];
+  current_task: TaskInfo | null;           // 当前执行中（status="running"）
+  pending_count: number;                   // channel 中待消费的任务数量（后端从 len(ch) 推导）
+  recent_tasks: TaskInfo[];                // 最近完成的任务（status="success"|"failed"）
 }
 
 export interface LogEntry {
