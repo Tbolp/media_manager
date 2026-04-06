@@ -58,6 +58,7 @@ func main() {
 	r := gin.Default()
 
 	setupRoutes(r)
+	setupFrontend(r)
 
 	// Create HTTP server
 	srv := &http.Server{

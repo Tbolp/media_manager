@@ -2,3 +2,4 @@ data/
 thumbnails/
 .env
 /server
+cmd/server/dist/
