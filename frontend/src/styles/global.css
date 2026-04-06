@@ -42,14 +42,11 @@ html, body {
 /* antd Modal 遮罩加深 */
 .ant-modal-mask {
   background: rgba(0, 0, 0, 0.6) !important;
-  backdrop-filter: blur(4px);
 }
 
 /* antd Modal 暗色玻璃风格 */
 .ant-modal-content {
-  background: rgba(30, 27, 75, 0.85) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  background: rgba(30, 27, 75, 0.95) !important;
   border: 1px solid rgba(67, 56, 202, 0.25) !important;
   border-radius: 20px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
@@ -93,10 +90,8 @@ html, body {
   background: rgba(67, 56, 202, 0.1) !important;
 }
 
-/* antd Card 玻璃质感 */
+/* antd Card 暗色风格 */
 .ant-card {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(67, 56, 202, 0.2);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s ease, box-shadow 0.3s ease;

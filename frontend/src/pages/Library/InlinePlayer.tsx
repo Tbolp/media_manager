@@ -45,31 +45,31 @@ export default function InlinePlayer({ file, onClose }: Props) {
     };
   }, []);
 
-  // 设置初始播放位置并确保自动播放
+  // 设置初始播放位置并自动播放
   useEffect(() => {
     const video = videoRef.current;
     if (!ready || !video) return;
+    let cancelled = false;
 
-    const onLoadedMetadata = () => {
+    const startPlayback = () => {
+      if (cancelled) return;
       if (initialPositionRef.current > 0) {
         video.currentTime = initialPositionRef.current;
       }
-      // 尝试自动播放
       video.play().catch(() => {
-        // 浏览器阻止了自动播放，静音后重试
-        video.muted = true;
-        video.play().catch(() => {});
+        // 浏览器自动播放策略阻止，不再重试，由用户手动点击播放
       });
     };
 
-    video.addEventListener('loadedmetadata', onLoadedMetadata);
-
     if (video.readyState >= 1) {
-      onLoadedMetadata();
+      startPlayback();
+    } else {
+      video.addEventListener('loadedmetadata', startPlayback, { once: true });
     }
 
     return () => {
-      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      cancelled = true;
+      video.removeEventListener('loadedmetadata', startPlayback);
     };
   }, [file.id, ready]);
 
@@ -99,9 +99,8 @@ export default function InlinePlayer({ file, onClose }: Props) {
           className={styles.video}
           src={token ? getStreamUrl(file.id, token) : undefined}
           controls
-          autoPlay
           playsInline
-          preload="metadata"
+          preload="auto"
           onError={handleError}
         />
       )}
