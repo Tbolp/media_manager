@@ -50,7 +50,7 @@ func main() {
 		log.Fatalf("Failed to list libraries: %v", err)
 	}
 	for _, lib := range libs {
-		qm.StartQueue(lib.ID)
+		qm.StartQueue(lib.ID, lib.Name)
 	}
 
 	// Set up Gin router

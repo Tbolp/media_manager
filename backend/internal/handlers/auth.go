@@ -56,7 +56,7 @@ func HandleInit(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("系统初始化，创建管理员 %s", user.Username))
+	services.WriteLog(fmt.Sprintf("系统初始化，创建管理员 %s", services.LogUser(user.Username, user.ID)))
 
 	c.JSON(http.StatusCreated, gin.H{"id": user.ID, "username": user.Username})
 }

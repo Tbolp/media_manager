@@ -42,6 +42,7 @@ type LibraryQueue struct {
 	currentTask    *TaskStatus
 	recentTasks    []TaskStatus
 	libraryID      string
+	libraryName    string
 }
 
 // QueueManager manages all library queues.
@@ -61,12 +62,13 @@ func NewQueueManager(refreshFunc RefreshFunc, logFunc func(string)) *QueueManage
 }
 
 // StartQueue creates and starts a queue for a library.
-func (qm *QueueManager) StartQueue(libraryID string) {
+func (qm *QueueManager) StartQueue(libraryID, libraryName string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	lq := &LibraryQueue{
-		ch:        make(chan RefreshTask, channelCapacity),
-		cancel:    cancel,
-		libraryID: libraryID,
+		ch:          make(chan RefreshTask, channelCapacity),
+		cancel:      cancel,
+		libraryID:   libraryID,
+		libraryName: libraryName,
 	}
 	qm.queues.Store(libraryID, lq)
 
@@ -177,7 +179,7 @@ func (qm *QueueManager) runWorker(ctx context.Context, lq *LibraryQueue) {
 		select {
 		case <-ctx.Done():
 			if qm.logFunc != nil {
-				qm.logFunc(fmt.Sprintf("媒体库 %s 队列已停止，剩余任务取消", lq.libraryID))
+				qm.logFunc(fmt.Sprintf("媒体库 %s(%s) 队列已停止，剩余任务取消", lq.libraryName, lq.libraryID))
 			}
 			return
 		case task := <-lq.ch:
@@ -221,9 +223,9 @@ func (qm *QueueManager) runWorker(ctx context.Context, lq *LibraryQueue) {
 			// Write log
 			if qm.logFunc != nil {
 				if err != nil {
-					qm.logFunc(fmt.Sprintf("媒体库 %s %s刷新失败：%v", lq.libraryID, taskTypeLabel(task), err))
+					qm.logFunc(fmt.Sprintf("媒体库 %s(%s) %s刷新失败：%v", lq.libraryName, lq.libraryID, taskTypeLabel(task), err))
 				} else {
-					qm.logFunc(fmt.Sprintf("媒体库 %s %s刷新完成", lq.libraryID, taskTypeLabel(task)))
+					qm.logFunc(fmt.Sprintf("媒体库 %s(%s) %s刷新完成", lq.libraryName, lq.libraryID, taskTypeLabel(task)))
 				}
 			}
 

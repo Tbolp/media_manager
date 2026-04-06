@@ -118,11 +118,11 @@ func HandleCreateLibrary(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 创建媒体库 %s", admin.Username, lib.Name))
+	services.WriteLog(fmt.Sprintf("管理员 %s 创建媒体库 %s", services.LogUser(admin.Username, admin.ID), services.LogLibrary(lib.Name, lib.ID)))
 
 	// Start queue and enqueue initial full refresh
 	if queueManager != nil {
-		queueManager.StartQueue(lib.ID)
+		queueManager.StartQueue(lib.ID, lib.Name)
 		queueManager.EnqueueFull(lib.ID)
 	}
 
@@ -152,7 +152,7 @@ func HandleRenameLibrary(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 将媒体库 %s 改名为 %s", admin.Username, oldName, req.Name))
+	services.WriteLog(fmt.Sprintf("管理员 %s 将媒体库 %s 改名为 %s", services.LogUser(admin.Username, admin.ID), services.LogLibrary(oldName, libID), req.Name))
 
 	c.JSON(http.StatusOK, gin.H{"detail": "已改名"})
 }
@@ -178,7 +178,7 @@ func HandleDeleteLibrary(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 删除媒体库 %s", admin.Username, lib.Name))
+	services.WriteLog(fmt.Sprintf("管理员 %s 删除媒体库 %s", services.LogUser(admin.Username, admin.ID), services.LogLibrary(lib.Name, lib.ID)))
 
 	c.JSON(http.StatusOK, gin.H{"detail": "已删除"})
 }

@@ -107,7 +107,7 @@ func HandleUpload(c *gin.Context) {
 
 	if err != nil {
 		os.Remove(tmpPath)
-		services.WriteLog(fmt.Sprintf("用户 %s 上传 %s 至媒体库 %s 失败：写入中断", user.Username, filename, lib.Name))
+		services.WriteLog(fmt.Sprintf("用户 %s 上传 %s 至媒体库 %s 失败：写入中断", services.LogUser(user.Username, user.ID), filename, services.LogLibrary(lib.Name, lib.ID)))
 		core.RespondError(c, http.StatusInternalServerError, "上传失败，请重试")
 		return
 	}
@@ -127,7 +127,7 @@ func HandleUpload(c *gin.Context) {
 		relativePath = filename
 	}
 
-	services.WriteLog(fmt.Sprintf("用户 %s 上传 %s 至媒体库 %s", user.Username, filename, lib.Name))
+	services.WriteLog(fmt.Sprintf("用户 %s 上传 %s 至媒体库 %s", services.LogUser(user.Username, user.ID), filename, services.LogLibrary(lib.Name, lib.ID)))
 
 	// Enqueue targeted refresh
 	if queueManager != nil {
@@ -159,7 +159,7 @@ func HandleRefresh(c *gin.Context) {
 	}
 
 	if queued {
-		services.WriteLog(fmt.Sprintf("用户 %s 触发媒体库 %s 全量刷新", user.Username, lib.Name))
+		services.WriteLog(fmt.Sprintf("用户 %s 触发媒体库 %s 全量刷新", services.LogUser(user.Username, user.ID), services.LogLibrary(lib.Name, lib.ID)))
 	}
 
 	c.JSON(http.StatusOK, gin.H{"queued": queued})

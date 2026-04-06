@@ -17,3 +17,23 @@ func WriteLog(message string) {
 		fmt.Printf("WARNING: failed to write log: %v\n", err)
 	}
 }
+
+// LogUser formats a user as "username(id)" for log messages.
+func LogUser(username, id string) string {
+	return fmt.Sprintf("%s(%s)", username, id)
+}
+
+// LogLibrary formats a library as "name(id)" for log messages.
+func LogLibrary(name, id string) string {
+	return fmt.Sprintf("%s(%s)", name, id)
+}
+
+// GetLibraryNameByID returns the library name for logging. Returns id if not found.
+func GetLibraryNameByID(libraryID string) string {
+	var name string
+	err := database.AppDB.Get(&name, "SELECT name FROM media_libraries WHERE id = ?", libraryID)
+	if err != nil {
+		return libraryID
+	}
+	return name
+}

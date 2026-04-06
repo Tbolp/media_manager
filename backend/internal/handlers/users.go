@@ -86,7 +86,7 @@ func HandleCreateUser(c *gin.Context) {
 	}
 
 	admin := middleware.GetCurrentUser(c)
-	services.WriteLog(fmt.Sprintf("管理员 %s 创建用户 %s", admin.Username, user.Username))
+	services.WriteLog(fmt.Sprintf("管理员 %s 创建用户 %s", services.LogUser(admin.Username, admin.ID), services.LogUser(user.Username, user.ID)))
 
 	c.JSON(http.StatusCreated, gin.H{"id": user.ID, "username": user.Username})
 }
@@ -112,7 +112,7 @@ func HandleDisableUser(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 禁用用户 %s", admin.Username, target.Username))
+	services.WriteLog(fmt.Sprintf("管理员 %s 禁用用户 %s", services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID)))
 
 	c.JSON(http.StatusOK, gin.H{"detail": "已禁用"})
 }
@@ -133,7 +133,7 @@ func HandleEnableUser(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 解禁用户 %s", admin.Username, target.Username))
+	services.WriteLog(fmt.Sprintf("管理员 %s 解禁用户 %s", services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID)))
 
 	c.JSON(http.StatusOK, gin.H{"detail": "已解禁"})
 }
@@ -159,7 +159,7 @@ func HandleDeleteUser(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 删除用户 %s", admin.Username, target.Username))
+	services.WriteLog(fmt.Sprintf("管理员 %s 删除用户 %s", services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID)))
 
 	c.JSON(http.StatusOK, gin.H{"detail": "已删除"})
 }
@@ -186,7 +186,7 @@ func HandleResetPassword(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 重置用户 %s 的密码", admin.Username, target.Username))
+	services.WriteLog(fmt.Sprintf("管理员 %s 重置用户 %s 的密码", services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID)))
 
 	// Return a new token if the admin is resetting their own password
 	if targetID == admin.ID {
@@ -226,7 +226,19 @@ func HandleUpdatePermissions(c *gin.Context) {
 		return
 	}
 
-	services.WriteLog(fmt.Sprintf("管理员 %s 更新用户 %s 的媒体库权限", admin.Username, target.Username))
+	// 构建媒体库名称列表用于日志
+	libNames := make([]string, 0, len(req.LibraryIDs))
+	for _, libID := range req.LibraryIDs {
+		name := services.GetLibraryNameByID(libID)
+		libNames = append(libNames, services.LogLibrary(name, libID))
+	}
+	if len(libNames) == 0 {
+		services.WriteLog(fmt.Sprintf("管理员 %s 清空用户 %s 的媒体库权限",
+			services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID)))
+	} else {
+		services.WriteLog(fmt.Sprintf("管理员 %s 更新用户 %s 的媒体库权限为: %v",
+			services.LogUser(admin.Username, admin.ID), services.LogUser(target.Username, target.ID), libNames))
+	}
 
 	c.JSON(http.StatusOK, gin.H{"detail": "权限已更新"})
 }
