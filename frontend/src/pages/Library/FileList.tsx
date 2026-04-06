@@ -56,7 +56,7 @@ export default function FileList({
         ))}
 
         {files.map((file) => (
-          <div key={file.id} className={styles.fileCard} onClick={() => handleFileClick(file)}>
+          <div key={file.id} id={`file-${file.id}`} className={styles.fileCard} onClick={() => handleFileClick(file)}>
             <div className={styles.thumbnail}>
               {token ? (
                 <img

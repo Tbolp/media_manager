@@ -40,6 +40,7 @@ export default function LibraryPage() {
 
   // 内嵌播放器
   const [playingFile, setPlayingFile] = useState<FileItem | null>(null);
+  const [lastPlayedId, setLastPlayedId] = useState<string | null>(null);
 
   const imageFiles = files.filter((f) => f.file_type === 'image');
 
@@ -79,6 +80,19 @@ export default function LibraryPage() {
   useEffect(() => {
     fetchLibraryInfo();
   }, [fetchLibraryInfo]);
+
+  // 关闭播放器后，滚动到上次播放的文件卡片
+  useEffect(() => {
+    if (lastPlayedId && !playingFile) {
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`file-${lastPlayedId}`);
+        if (el) {
+          el.scrollIntoView({ block: 'start', behavior: 'instant' });
+        }
+        setLastPlayedId(null);
+      });
+    }
+  }, [lastPlayedId, playingFile]);
 
   useEffect(() => {
     fetchFiles();
@@ -210,7 +224,7 @@ export default function LibraryPage() {
         <InlinePlayer
           key={playingFile.id}
           file={playingFile}
-          onClose={() => setPlayingFile(null)}
+          onClose={() => { setLastPlayedId(playingFile?.id ?? null); setPlayingFile(null); }}
         />
       )}
 
@@ -232,7 +246,7 @@ export default function LibraryPage() {
             onEnterDir={handleEnterDir}
             onPageChange={handlePageChange}
             onImageClick={handleImageClick}
-            onVideoClick={(file) => setPlayingFile(file)}
+            onVideoClick={(file) => { setPlayingFile(file); window.scrollTo(0, 0); }}
           />
         )}
       </div>

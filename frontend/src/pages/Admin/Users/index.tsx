@@ -138,6 +138,8 @@ export default function UsersPage() {
         dataSource={users}
         loading={loading}
         pagination={false}
+        scroll={{ x: 'max-content' }}
+        style={{ background: 'transparent' }}
         expandable={{
           expandedRowRender: (record) => (
             <PermissionPanel userId={record.id} libraryIds={record.library_ids} />

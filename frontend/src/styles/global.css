@@ -55,6 +55,23 @@ html, body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
+/* antd Table 暗色背景统一 */
+.ant-table,
+.ant-table-container,
+.ant-table-content,
+.ant-table-thead > tr > th,
+.ant-table-tbody > tr > td,
+.ant-table-cell-fix-left,
+.ant-table-cell-fix-right {
+  background: transparent !important;
+}
+
+.ant-table-wrapper {
+  background: rgba(30, 27, 75, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 /* antd Table 行 hover */
 .ant-table-tbody > tr:hover > td {
   background: rgba(67, 56, 202, 0.1) !important;

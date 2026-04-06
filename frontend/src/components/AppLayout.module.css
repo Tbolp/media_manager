@@ -34,6 +34,20 @@
   font-size: 22px;
 }
 
+.logoText {
+  display: inline;
+}
+
+@media (max-width: 576px) {
+  .logoText {
+    display: none;
+  }
+
+  .logo {
+    margin-right: 12px;
+  }
+}
+
 .content {
   padding: 24px;
   background: transparent;

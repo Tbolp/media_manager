@@ -39,7 +39,7 @@ export function AppLayout() {
       <Layout.Header className={styles.header}>
         <div className={styles.logo}>
           <PlayCircleFilled className={styles.logoIcon} />
-          家庭影院
+          <span className={styles.logoText}>家庭影院</span>
         </div>
         <Menu
           theme="dark"
