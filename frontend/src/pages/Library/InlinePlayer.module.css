@@ -1,7 +1,6 @@
 .wrapper {
   margin: 0 auto 20px;
-  width: 800px;
-  max-width: 100%;
+  width: min(800px, 100%);
   border-radius: 16px;
   border: 1px solid rgba(67, 56, 202, 0.2);
   background: rgba(15, 15, 35, 0.6);
@@ -45,6 +44,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 450px;
+  aspect-ratio: 16 / 9;
   background: #000;
 }
