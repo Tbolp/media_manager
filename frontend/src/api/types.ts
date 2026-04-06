@@ -40,6 +40,7 @@ export interface Library {
   name: string;
   lib_type: LibType;
   refresh_status: RefreshStatus;
+  cover_file_id: string | null;
 }
 
 export interface CreateLibraryRequest {

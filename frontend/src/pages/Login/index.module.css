@@ -1,0 +1,248 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 20% 50%, #1e1b4b 0%, #0f0f23 50%, #070714 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+/* 动态光斑背景 */
+.container::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(67, 56, 202, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float1 8s ease-in-out infinite;
+}
+
+.container::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(202, 138, 4, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float2 10s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -20px) scale(1.05); }
+}
+
+/* 登录卡片 - 3D 玻璃质感 */
+.card {
+  position: relative;
+  z-index: 1;
+  width: 420px;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 15, 35, 0.8) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(67, 56, 202, 0.3);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(67, 56, 202, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.card:hover {
+  transform: perspective(1000px) rotateY(-1deg) rotateX(1deg);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(67, 56, 202, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* 卡片顶部光泽 */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+/* 标题区域 */
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #ca8a04 0%, #eab308 50%, #ca8a04 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #0f0f23;
+  box-shadow:
+    0 4px 16px rgba(202, 138, 4, 0.3),
+    0 0 32px rgba(202, 138, 4, 0.1);
+  transform: perspective(500px) rotateX(5deg);
+}
+
+.title {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  margin: 0 0 4px 0 !important;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  color: rgba(248, 250, 252, 0.5);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* 表单样式覆盖 */
+.form :global(.ant-form-item-label > label) {
+  color: rgba(248, 250, 252, 0.7) !important;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.form :global(.ant-input),
+.form :global(.ant-input-password .ant-input) {
+  background: rgba(39, 39, 59, 0.6) !important;
+  border: 1px solid rgba(67, 56, 202, 0.25) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  height: 48px !important;
+  font-size: 15px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.form :global(.ant-input:focus),
+.form :global(.ant-input-focused),
+.form :global(.ant-input-password:focus-within) {
+  border-color: rgba(202, 138, 4, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(202, 138, 4, 0.1) !important;
+}
+
+.form :global(.ant-input::placeholder) {
+  color: rgba(248, 250, 252, 0.25) !important;
+}
+
+.form :global(.ant-input-password) {
+  background: rgba(39, 39, 59, 0.6) !important;
+  border: 1px solid rgba(67, 56, 202, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 0 16px !important;
+}
+
+.form :global(.ant-input-password .ant-input) {
+  border: none !important;
+  padding: 8px 0 !important;
+  background: transparent !important;
+}
+
+.form :global(.ant-input-suffix) {
+  color: rgba(248, 250, 252, 0.4) !important;
+}
+
+/* 登录按钮 */
+.submitBtn {
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, #ca8a04 0%, #eab308 100%) !important;
+  border: none !important;
+  color: #0f0f23 !important;
+  box-shadow: 0 4px 16px rgba(202, 138, 4, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.submitBtn:hover {
+  box-shadow: 0 6px 24px rgba(202, 138, 4, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+}
+
+/* 错误提示 */
+.alert {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 12px !important;
+  margin-bottom: 24px;
+}
+
+.alert :global(.ant-alert-message) {
+  color: #fca5a5 !important;
+}
+
+/* 加载状态 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #0f0f23;
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .card {
+    width: calc(100vw - 32px);
+    padding: 36px 24px;
+    border-radius: 20px;
+  }
+
+  .title {
+    font-size: 24px !important;
+  }
+
+  .icon {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container::before,
+  .container::after {
+    animation: none;
+  }
+
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
+}

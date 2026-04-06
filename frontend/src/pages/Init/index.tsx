@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, message, Typography } from 'antd';
+import { Form, Input, Button, message } from 'antd';
+import { SettingFilled } from '@ant-design/icons';
 import { init } from '@/api/auth';
 import { AxiosError } from 'axios';
-
-const { Title } = Typography;
+import styles from './index.module.css';
 
 interface InitForm {
   username: string;
@@ -19,7 +19,7 @@ export default function InitPage() {
   const handleSubmit = async (values: InitForm) => {
     setLoading(true);
     try {
-      await init({ username: values.username, password: values.password });
+      await init({ username: values.username, password: values.password ?? '' });
       message.success('管理员账号创建成功');
       navigate('/login');
     } catch (err) {
@@ -36,23 +36,29 @@ export default function InitPage() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <Card style={{ width: 400 }}>
-        <Title level={3} style={{ textAlign: 'center' }}>系统初始化</Title>
-        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <div className={styles.icon}>
+            <SettingFilled />
+          </div>
+          <h1 className={styles.title}>系统初始化</h1>
+          <div className={styles.subtitle}>创建管理员账号</div>
+        </div>
+        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off" className={styles.form}>
           <Form.Item
             name="username"
             label="管理员用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
           >
-            <Input />
+            <Input placeholder="请输入用户名" />
           </Form.Item>
           <Form.Item
             name="password"
             label="密码"
             rules={[]}
           >
-            <Input.Password />
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
           <Form.Item
             name="confirmPassword"
@@ -69,15 +75,15 @@ export default function InitPage() {
               }),
             ]}
           >
-            <Input.Password />
+            <Input.Password placeholder="请再次输入密码" />
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
+          <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+            <Button type="primary" htmlType="submit" loading={loading} block className={styles.submitBtn}>
               创建管理员
             </Button>
           </Form.Item>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Card, Form, Input, Button, Alert, Typography, Spin } from 'antd';
+import { Form, Input, Button, Alert, Spin } from 'antd';
+import { PlayCircleFilled } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth';
 import { login, getInitStatus } from '@/api/auth';
 import { AxiosError } from 'axios';
-
-const { Title } = Typography;
+import styles from './index.module.css';
 
 interface LoginForm {
   username: string;
@@ -20,7 +20,6 @@ export default function LoginPage() {
   const [checking, setChecking] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // mount 时检查系统是否已初始化，未初始化则跳转 /init
   useEffect(() => {
     getInitStatus()
       .then((initialized) => {
@@ -32,7 +31,6 @@ export default function LoginPage() {
       .finally(() => setChecking(false));
   }, [navigate]);
 
-  // 读取 authErrorMessage（401 被踢出时的提示）
   useEffect(() => {
     if (authErrorMessage) {
       setErrorMsg(authErrorMessage);
@@ -58,42 +56,62 @@ export default function LoginPage() {
 
   if (checking) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+      <div className={styles.loading}>
         <Spin size="large" />
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-      <Card style={{ width: 400 }}>
-        <Title level={3} style={{ textAlign: 'center' }}>家庭影院</Title>
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <div className={styles.icon}>
+            <PlayCircleFilled />
+          </div>
+          <h1 className={styles.title}>家庭影院</h1>
+          <div className={styles.subtitle}>Home Theater</div>
+        </div>
+
         {errorMsg && (
-          <Alert message={errorMsg} type="error" showIcon closable style={{ marginBottom: 16 }}
-            onClose={() => setErrorMsg(null)} />
+          <Alert
+            message={errorMsg}
+            type="error"
+            showIcon
+            closable
+            className={styles.alert}
+            onClose={() => setErrorMsg(null)}
+          />
         )}
-        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off">
+
+        <Form layout="vertical" onFinish={handleSubmit} autoComplete="off" className={styles.form}>
           <Form.Item
             name="username"
             label="用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
           >
-            <Input />
+            <Input placeholder="请输入用户名" />
           </Form.Item>
           <Form.Item
             name="password"
             label="密码"
             rules={[]}
           >
-            <Input.Password />
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
+          <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              className={styles.submitBtn}
+            >
               登录
             </Button>
           </Form.Item>
         </Form>
-      </Card>
+      </div>
     </div>
   );
 }

@@ -34,7 +34,7 @@ export default function PermissionPanel({ userId, libraryIds }: Props) {
   if (loading) return <Spin size="small" />;
 
   if (allLibraries.length === 0) {
-    return <span style={{ color: '#999' }}>暂无媒体库</span>;
+    return <span style={{ color: 'rgba(248,250,252,0.5)' }}>暂无媒体库</span>;
   }
 
   return (

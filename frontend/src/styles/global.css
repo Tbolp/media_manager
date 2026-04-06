@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: #0f0f23;
+  color: #f8fafc;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(67, 56, 202, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(67, 56, 202, 0.5);
+}
+
+/* 选中文字颜色 */
+::selection {
+  background: rgba(202, 138, 4, 0.3);
+  color: #f8fafc;
+}
+
+/* antd Modal 遮罩加深 */
+.ant-modal-mask {
+  background: rgba(0, 0, 0, 0.6) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* antd Modal 暗色玻璃风格 */
+.ant-modal-content {
+  background: rgba(30, 27, 75, 0.85) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(67, 56, 202, 0.25) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* antd Table 行 hover */
+.ant-table-tbody > tr:hover > td {
+  background: rgba(67, 56, 202, 0.1) !important;
+}
+
+/* antd Card 玻璃质感 */
+.ant-card {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(67, 56, 202, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* antd Tabs 下划线金色 */
+.ant-tabs-ink-bar {
+  background: #ca8a04 !important;
+}
+
+/* antd Tag 样式微调 */
+.ant-tag {
+  border-radius: 8px;
+}
+
+/* antd Alert 圆角 */
+.ant-alert {
+  border-radius: 12px;
+}
+
+/* antd Breadcrumb 链接颜色 */
+.ant-breadcrumb a,
+.ant-breadcrumb span {
+  transition: color 0.2s ease;
+}
+
+/* 页面标题统一样式 */
+h2 {
+  color: #f8fafc;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+/* 链接过渡 */
+a {
+  transition: color 0.2s ease;
+}
+
+/* 减少动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

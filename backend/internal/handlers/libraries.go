@@ -9,6 +9,7 @@ import (
 
 	"media-manager/internal/config"
 	"media-manager/internal/core"
+	"media-manager/internal/database"
 	"media-manager/internal/middleware"
 	"media-manager/internal/queue"
 	"media-manager/internal/services"
@@ -52,10 +53,11 @@ func HandleListLibraries(c *gin.Context) {
 	}
 
 	type libraryItem struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		LibType       string `json:"lib_type"`
-		RefreshStatus string `json:"refresh_status"`
+		ID            string  `json:"id"`
+		Name          string  `json:"name"`
+		LibType       string  `json:"lib_type"`
+		RefreshStatus string  `json:"refresh_status"`
+		CoverFileID   *string `json:"cover_file_id"`
 	}
 
 	items := make([]libraryItem, 0)
@@ -79,11 +81,21 @@ func HandleListLibraries(c *gin.Context) {
 			refreshStatus = queueManager.GetRefreshStatus(lib.ID)
 		}
 
+		// Get cover file: first file in the library
+		var coverID *string
+		var fid string
+		err := database.AppDB.Get(&fid,
+			"SELECT id FROM media_files WHERE library_id = ? ORDER BY relative_path ASC LIMIT 1", lib.ID)
+		if err == nil {
+			coverID = &fid
+		}
+
 		items = append(items, libraryItem{
 			ID:            lib.ID,
 			Name:          lib.Name,
 			LibType:       lib.LibType,
 			RefreshStatus: refreshStatus,
+			CoverFileID:   coverID,
 		})
 	}
 

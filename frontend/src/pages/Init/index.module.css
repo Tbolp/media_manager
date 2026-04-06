@@ -1,0 +1,165 @@
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 80% 50%, #1e1b4b 0%, #0f0f23 50%, #070714 100%);
+  overflow: hidden;
+  position: relative;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(67, 56, 202, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 9s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 20px) scale(1.08); }
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: 420px;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(15, 15, 35, 0.8) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(67, 56, 202, 0.3);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(67, 56, 202, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #f8fafc;
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.3);
+}
+
+.title {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  margin: 0 0 4px 0 !important;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: rgba(248, 250, 252, 0.5);
+}
+
+.form :global(.ant-form-item-label > label) {
+  color: rgba(248, 250, 252, 0.7) !important;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.form :global(.ant-input),
+.form :global(.ant-input-password .ant-input) {
+  background: rgba(39, 39, 59, 0.6) !important;
+  border: 1px solid rgba(67, 56, 202, 0.25) !important;
+  border-radius: 12px !important;
+  color: #f8fafc !important;
+  height: 48px !important;
+  font-size: 15px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.form :global(.ant-input:focus),
+.form :global(.ant-input-focused),
+.form :global(.ant-input-password:focus-within) {
+  border-color: rgba(67, 56, 202, 0.6) !important;
+  box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1) !important;
+}
+
+.form :global(.ant-input::placeholder) {
+  color: rgba(248, 250, 252, 0.25) !important;
+}
+
+.form :global(.ant-input-password) {
+  background: rgba(39, 39, 59, 0.6) !important;
+  border: 1px solid rgba(67, 56, 202, 0.25) !important;
+  border-radius: 12px !important;
+  padding: 0 16px !important;
+}
+
+.form :global(.ant-input-password .ant-input) {
+  border: none !important;
+  padding: 8px 0 !important;
+  background: transparent !important;
+}
+
+.form :global(.ant-input-suffix) {
+  color: rgba(248, 250, 252, 0.4) !important;
+}
+
+.submitBtn {
+  height: 48px !important;
+  border-radius: 12px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%) !important;
+  border: none !important;
+  color: #f8fafc !important;
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.submitBtn:hover {
+  box-shadow: 0 6px 24px rgba(67, 56, 202, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #0f0f23;
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: calc(100vw - 32px);
+    padding: 36px 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container::before { animation: none; }
+}

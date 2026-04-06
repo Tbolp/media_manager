@@ -78,13 +78,13 @@ export default function TaskCenter() {
               <strong>当前任务：</strong>
               {renderTaskStatus(lib.current_task)}
               {lib.current_task.started_at && (
-                <span style={{ color: '#999', marginLeft: 8 }}>
+                <span style={{ color: 'rgba(248,250,252,0.5)', marginLeft: 8 }}>
                   开始于 {formatDateTime(lib.current_task.started_at)}
                 </span>
               )}
             </div>
           ) : (
-            <div style={{ marginBottom: 8, color: '#999' }}>当前无任务</div>
+            <div style={{ marginBottom: 8, color: 'rgba(248,250,252,0.5)' }}>当前无任务</div>
           )}
 
           {/* 待执行 */}
@@ -105,12 +105,12 @@ export default function TaskCenter() {
                   <List.Item>
                     {renderTaskStatus(task)}
                     {task.finished_at && (
-                      <span style={{ color: '#999' }}>
+                      <span style={{ color: 'rgba(248,250,252,0.5)' }}>
                         {formatDateTime(task.finished_at)}
                       </span>
                     )}
                     {task.error && (
-                      <span style={{ color: '#ff4d4f', marginLeft: 8 }}>
+                      <span style={{ color: '#ef4444', marginLeft: 8 }}>
                         {task.error}
                       </span>
                     )}

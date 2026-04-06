@@ -1,5 +1,4 @@
-import { Breadcrumb } from 'antd';
-import { HomeOutlined } from '@ant-design/icons';
+import styles from './DirBreadcrumb.module.css';
 
 interface Props {
   libraryName: string;
@@ -11,25 +10,27 @@ export default function DirBreadcrumb({ libraryName, currentPath, onNavigate }: 
   const segments = currentPath ? currentPath.split('/').filter(Boolean) : [];
 
   const items = [
-    {
-      title: (
-        <span style={{ cursor: 'pointer' }} onClick={() => onNavigate('')}>
-          <HomeOutlined style={{ marginRight: 4 }} />
-          {libraryName}
-        </span>
-      ),
-    },
+    { label: libraryName, path: '' },
     ...segments.map((seg, i) => ({
-      title: (
-        <span
-          style={{ cursor: 'pointer' }}
-          onClick={() => onNavigate(segments.slice(0, i + 1).join('/'))}
-        >
-          {seg}
-        </span>
-      ),
+      label: seg,
+      path: segments.slice(0, i + 1).join('/'),
     })),
   ];
 
-  return <Breadcrumb items={items} style={{ marginBottom: 16 }} />;
+  return (
+    <div className={styles.bar}>
+      {items.map((item, i) => {
+        const isLast = i === items.length - 1;
+        return (
+          <span
+            key={item.path || '_root'}
+            className={`${styles.item} ${isLast ? styles.active : ''}`}
+            onClick={isLast ? undefined : () => onNavigate(item.path)}
+          >
+            {item.label}
+          </span>
+        );
+      })}
+    </div>
+  );
 }

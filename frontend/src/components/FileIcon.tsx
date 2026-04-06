@@ -8,8 +8,8 @@ interface Props {
 }
 
 export function FileIcon({ fileType, isDir, style }: Props) {
-  if (isDir) return <FolderOutlined style={{ color: '#faad14', ...style }} />;
-  if (fileType === 'video') return <PlayCircleOutlined style={{ color: '#1677ff', ...style }} />;
-  if (fileType === 'image') return <PictureOutlined style={{ color: '#52c41a', ...style }} />;
+  if (isDir) return <FolderOutlined style={{ color: '#eab308', ...style }} />;
+  if (fileType === 'video') return <PlayCircleOutlined style={{ color: '#ca8a04', ...style }} />;
+  if (fileType === 'image') return <PictureOutlined style={{ color: '#6366f1', ...style }} />;
   return <FolderOutlined style={style} />;
 }

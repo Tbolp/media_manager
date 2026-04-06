@@ -1,10 +1,9 @@
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { Layout, Menu, Dropdown, Button } from 'antd';
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
+import { LogoutOutlined, UserOutlined, PlayCircleFilled } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth';
 import { logout } from '@/api/auth';
-
-const { Header, Content } = Layout;
+import styles from './AppLayout.module.css';
 
 export function AppLayout() {
   const { user, isAdmin, clearAuth } = useAuthStore();
@@ -30,16 +29,16 @@ export function AppLayout() {
       : []),
   ];
 
-  // 确定当前选中的菜单项
   const selectedKey = menuItems
     .map((item) => item.key)
     .filter((key) => location.pathname.startsWith(key))
     .sort((a, b) => b.length - a.length)[0] ?? '/';
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-        <div style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginRight: 32 }}>
+    <Layout className={styles.layout}>
+      <Layout.Header className={styles.header}>
+        <div className={styles.logo}>
+          <PlayCircleFilled className={styles.logoIcon} />
           家庭影院
         </div>
         <Menu
@@ -47,7 +46,7 @@ export function AppLayout() {
           mode="horizontal"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ flex: 1 }}
+          style={{ flex: 1, background: 'transparent', borderBottom: 'none' }}
         />
         <Dropdown
           menu={{
@@ -61,14 +60,14 @@ export function AppLayout() {
             ],
           }}
         >
-          <Button type="text" style={{ color: '#fff' }} icon={<UserOutlined />}>
+          <Button type="text" className={styles.userBtn} icon={<UserOutlined />}>
             {user?.username}
           </Button>
         </Dropdown>
-      </Header>
-      <Content style={{ padding: 24 }}>
+      </Layout.Header>
+      <Layout.Content className={styles.content}>
         <Outlet />
-      </Content>
+      </Layout.Content>
     </Layout>
   );
 }

@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import { List, Progress, Pagination, Tag } from 'antd';
-import { CheckCircleOutlined } from '@ant-design/icons';
+import { Pagination } from 'antd';
 import { FileIcon } from '@/components/FileIcon';
 import { useAuthStore } from '@/stores/auth';
 import { formatDuration, formatFileSize } from '@/utils/format';
 import { getThumbnailUrl } from '@/api/playback';
 import type { FileItem } from '@/api/types';
+import styles from './FileList.module.css';
 
 interface Props {
   libraryId: string;
@@ -45,84 +45,65 @@ export default function FileList({
 
   return (
     <div>
-      {/* 目录列表 */}
-      {dirs.length > 0 && (
-        <List
-          dataSource={dirs}
-          renderItem={(dirName) => (
-            <List.Item
-              style={{ cursor: 'pointer' }}
-              onClick={() => onEnterDir(dirName)}
-            >
-              <List.Item.Meta
-                avatar={<FileIcon isDir style={{ fontSize: 24 }} />}
-                title={dirName}
-              />
-            </List.Item>
-          )}
-        />
-      )}
+      {/* 目录 + 文件混合卡片网格 */}
+      <div className={styles.grid}>
+        {dirs.map((dirName) => (
+          <div key={`dir-${dirName}`} className={styles.dirCard} onClick={() => onEnterDir(dirName)}>
+            <div className={styles.dirIcon}>
+              <FileIcon isDir />
+            </div>
+            <div className={styles.dirName}>{dirName}</div>
+          </div>
+        ))}
 
-      {/* 文件列表 */}
-      <List
-        dataSource={files}
-        renderItem={(file) => (
-          <List.Item
-            style={{ cursor: 'pointer' }}
-            onClick={() => handleFileClick(file)}
-          >
-            <List.Item.Meta
-              avatar={
-                file.file_type === 'image' && token ? (
-                  <img
-                    src={getThumbnailUrl(file.id, token)}
-                    alt={file.filename}
-                    loading="lazy"
-                    style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
-                  />
-                ) : (
-                  <FileIcon fileType={file.file_type} style={{ fontSize: 24 }} />
-                )
-              }
-              title={
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span>{isSearchMode ? file.relative_path : file.filename}</span>
-                  {file.is_watched && (
-                    <Tag icon={<CheckCircleOutlined />} color="success">已看</Tag>
-                  )}
+        {files.map((file) => (
+          <div key={file.id} className={styles.fileCard} onClick={() => handleFileClick(file)}>
+            <div className={styles.thumbnail}>
+              {file.file_type === 'image' && token ? (
+                <img
+                  src={getThumbnailUrl(file.id, token)}
+                  alt={file.filename}
+                  className={styles.thumbnailImg}
+                  loading="lazy"
+                />
+              ) : (
+                <div className={styles.noThumb}>
+                  <FileIcon fileType={file.file_type} style={{ fontSize: 28 }} />
+                  <span>暂无预览</span>
                 </div>
-              }
-              description={
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                  {file.file_type === 'video' && (
-                    <>
-                      <span>{formatDuration(file.duration)}</span>
-                      {file.size != null && <span>{formatFileSize(file.size)}</span>}
-                    </>
-                  )}
-                  {file.file_type === 'image' && file.size != null && (
-                    <span>{formatFileSize(file.size)}</span>
-                  )}
-                </div>
-              }
-            />
-            {/* 视频进度条 */}
+              )}
+              {file.file_type === 'video' && file.duration != null && (
+                <span className={styles.duration}>{formatDuration(file.duration)}</span>
+              )}
+              {file.is_watched && (
+                <span className={styles.watchedBadge}>已看</span>
+              )}
+            </div>
+
             {file.file_type === 'video' && file.progress != null && file.progress > 0 && (
-              <div style={{ width: 120 }}>
-                <Progress
-                  percent={Math.round(file.progress * 100)}
-                  size="small"
-                  strokeColor={file.is_watched ? '#52c41a' : undefined}
+              <div className={styles.progressBar}>
+                <div
+                  className={styles.progressFill}
+                  style={{ width: `${Math.round(file.progress * 100)}%` }}
                 />
               </div>
             )}
-          </List.Item>
-        )}
-      />
+
+            <div className={styles.fileInfo}>
+              <div className={styles.fileName}>
+                {isSearchMode ? file.relative_path : file.filename}
+              </div>
+              {file.size != null && (
+                <div className={styles.fileMeta}>{formatFileSize(file.size)}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* 分页 */}
       {total > pageSize && (
-        <div style={{ textAlign: 'center', marginTop: 16 }}>
+        <div className={styles.pagination}>
           <Pagination
             current={page}
             pageSize={pageSize}
