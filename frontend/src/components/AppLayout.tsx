@@ -1,6 +1,6 @@
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { Layout, Menu, Dropdown, Button } from 'antd';
-import { LogoutOutlined, UserOutlined, PlayCircleFilled } from '@ant-design/icons';
+import { LogoutOutlined, UserOutlined, PlayCircleFilled, AppstoreOutlined, TeamOutlined, SettingOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth';
 import { logout } from '@/api/auth';
 import styles from './AppLayout.module.css';
@@ -19,15 +19,13 @@ export function AppLayout() {
     }
   };
 
-  const menuItems = [
-    { key: '/', label: <Link to="/">媒体库</Link> },
-    ...(isAdmin
-      ? [
-          { key: '/admin/users', label: <Link to="/admin/users">用户管理</Link> },
-          { key: '/admin/system', label: <Link to="/admin/system">系统运维</Link> },
-        ]
-      : []),
-  ];
+  const menuItems = isAdmin
+    ? [
+        { key: '/', icon: <AppstoreOutlined />, label: <Link to="/"><span className={styles.menuText}>媒体库</span></Link> },
+        { key: '/admin/users', icon: <TeamOutlined />, label: <Link to="/admin/users"><span className={styles.menuText}>用户管理</span></Link> },
+        { key: '/admin/system', icon: <SettingOutlined />, label: <Link to="/admin/system"><span className={styles.menuText}>系统运维</span></Link> },
+      ]
+    : [];
 
   const selectedKey = menuItems
     .map((item) => item.key)
@@ -46,7 +44,7 @@ export function AppLayout() {
           mode="horizontal"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ flex: 1, background: 'transparent', borderBottom: 'none' }}
+          style={{ flex: 1, background: 'transparent', borderBottom: 'none', lineHeight: '64px' }}
         />
         <Dropdown
           menu={{

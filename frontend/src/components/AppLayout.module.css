@@ -38,6 +38,10 @@
   display: inline;
 }
 
+.menuText {
+  display: inline;
+}
+
 @media (max-width: 576px) {
   .logoText {
     display: none;
@@ -45,6 +49,10 @@
 
   .logo {
     margin-right: 12px;
+  }
+
+  .menuText {
+    display: none;
   }
 }
 
@@ -56,6 +64,9 @@
 .userBtn {
   color: rgba(248, 250, 252, 0.8) !important;
   transition: color 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 40px !important;
 }
 
 .userBtn:hover {
