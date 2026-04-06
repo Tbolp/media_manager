@@ -1,10 +1,13 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/disintegration/imaging"
 
@@ -13,7 +16,7 @@ import (
 )
 
 // thumbnailLocks prevents concurrent generation for the same file.
-var thumbnailLocks sync.Map // key: file_id → *sync.Once (one-shot), or use chan approach
+var thumbnailLocks sync.Map
 
 // GetMediaFile fetches a media file by ID with its library info.
 func GetMediaFile(fileID string) (*models.MediaFile, *models.MediaLibrary, error) {
@@ -38,7 +41,7 @@ func GetAbsolutePath(lib *models.MediaLibrary, file *models.MediaFile) string {
 }
 
 // GetOrCreateThumbnail returns the path to a thumbnail, generating it if needed.
-// Uses per-file locking to prevent concurrent generation.
+// Supports both image and video files. Uses per-file locking to prevent concurrent generation.
 func GetOrCreateThumbnail(file *models.MediaFile, lib *models.MediaLibrary, thumbnailsDir string) (string, error) {
 	thumbPath := filepath.Join(thumbnailsDir, lib.ID, file.ID+".jpg")
 
@@ -47,7 +50,7 @@ func GetOrCreateThumbnail(file *models.MediaFile, lib *models.MediaLibrary, thum
 		return thumbPath, nil
 	}
 
-	// Per-file lock using sync.Map with a channel as a lock
+	// Per-file lock
 	type lockEntry struct {
 		done chan struct{}
 		err  error
@@ -58,7 +61,6 @@ func GetOrCreateThumbnail(file *models.MediaFile, lib *models.MediaLibrary, thum
 	entry := entryVal.(*lockEntry)
 
 	if loaded {
-		// Another goroutine is generating this thumbnail — wait for it
 		<-entry.done
 		if entry.err != nil {
 			return "", entry.err
@@ -66,30 +68,10 @@ func GetOrCreateThumbnail(file *models.MediaFile, lib *models.MediaLibrary, thum
 		return thumbPath, nil
 	}
 
-	// We are the first — generate the thumbnail
 	defer func() {
 		close(entry.done)
 		thumbnailLocks.Delete(file.ID)
 	}()
-
-	srcPath := GetAbsolutePath(lib, file)
-
-	// Open source image
-	src, err := imaging.Open(srcPath)
-	if err != nil {
-		entry.err = fmt.Errorf("open image: %w", err)
-		return "", entry.err
-	}
-
-	// Check if resize is needed
-	bounds := src.Bounds()
-	if bounds.Dx() <= 400 {
-		// Original is small enough — return original path directly
-		return srcPath, nil
-	}
-
-	// Resize to 400px width, maintaining aspect ratio
-	thumb := imaging.Resize(src, 400, 0, imaging.Lanczos)
 
 	// Ensure thumbnail directory exists
 	thumbDir := filepath.Dir(thumbPath)
@@ -98,11 +80,76 @@ func GetOrCreateThumbnail(file *models.MediaFile, lib *models.MediaLibrary, thum
 		return "", entry.err
 	}
 
-	// Save thumbnail
-	if err := imaging.Save(thumb, thumbPath); err != nil {
-		entry.err = fmt.Errorf("save thumbnail: %w", err)
-		return "", entry.err
+	srcPath := GetAbsolutePath(lib, file)
+
+	if file.FileType == "video" {
+		entry.err = generateVideoThumbnail(srcPath, thumbPath)
+		if entry.err != nil {
+			return "", entry.err
+		}
+		return thumbPath, nil
 	}
 
+	// Image thumbnail
+	entry.err = generateImageThumbnail(srcPath, thumbPath)
+	if entry.err != nil {
+		return "", entry.err
+	}
 	return thumbPath, nil
+}
+
+// generateVideoThumbnail uses ffmpeg to capture a frame at 1 second.
+func generateVideoThumbnail(videoPath, thumbPath string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "ffmpeg",
+		"-ss", "1",           // seek to 1 second
+		"-i", videoPath,
+		"-vframes", "1",      // capture 1 frame
+		"-vf", "scale=400:-1", // 400px width, auto height
+		"-q:v", "3",          // quality (2-5, lower is better)
+		"-y",                 // overwrite
+		thumbPath,
+	)
+	if err := cmd.Run(); err != nil {
+		// Fallback: try at 0 second (very short videos)
+		cmd2 := exec.CommandContext(ctx, "ffmpeg",
+			"-ss", "0",
+			"-i", videoPath,
+			"-vframes", "1",
+			"-vf", "scale=400:-1",
+			"-q:v", "3",
+			"-y",
+			thumbPath,
+		)
+		if err2 := cmd2.Run(); err2 != nil {
+			return fmt.Errorf("ffmpeg thumbnail: %w", err2)
+		}
+	}
+	return nil
+}
+
+// generateImageThumbnail resizes an image to 400px width.
+func generateImageThumbnail(srcPath, thumbPath string) error {
+	src, err := imaging.Open(srcPath)
+	if err != nil {
+		return fmt.Errorf("open image: %w", err)
+	}
+
+	bounds := src.Bounds()
+	if bounds.Dx() <= 400 {
+		// Small enough — copy original as thumbnail
+		data, err := os.ReadFile(srcPath)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(thumbPath, data, 0644)
+	}
+
+	thumb := imaging.Resize(src, 400, 0, imaging.Lanczos)
+	if err := imaging.Save(thumb, thumbPath); err != nil {
+		return fmt.Errorf("save thumbnail: %w", err)
+	}
+	return nil
 }

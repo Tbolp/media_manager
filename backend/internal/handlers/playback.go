@@ -65,17 +65,13 @@ func HandleRawImage(c *gin.Context) {
 }
 
 // HandleThumbnail serves a thumbnail (generated on demand and cached).
+// Supports both image and video files.
 func HandleThumbnail(c *gin.Context) {
 	fileID := c.Param("fid")
 
 	file, lib, err := services.GetMediaFile(fileID)
 	if err != nil {
 		core.RespondNotFound(c, "文件不存在或已移除")
-		return
-	}
-
-	if file.FileType != "image" {
-		core.RespondBadRequest(c, "此接口仅支持图片文件")
 		return
 	}
 

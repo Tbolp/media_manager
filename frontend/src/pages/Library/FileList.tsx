@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom';
 import { Pagination } from 'antd';
 import { FileIcon } from '@/components/FileIcon';
 import { useAuthStore } from '@/stores/auth';
@@ -18,10 +17,10 @@ interface Props {
   onEnterDir: (dirName: string) => void;
   onPageChange: (page: number) => void;
   onImageClick: (fileId: string) => void;
+  onVideoClick: (file: FileItem) => void;
 }
 
 export default function FileList({
-  libraryId,
   files,
   dirs,
   total,
@@ -31,13 +30,13 @@ export default function FileList({
   onEnterDir,
   onPageChange,
   onImageClick,
+  onVideoClick,
 }: Props) {
-  const navigate = useNavigate();
   const token = useAuthStore((s) => s.token);
 
   const handleFileClick = (file: FileItem) => {
     if (file.file_type === 'video') {
-      navigate(`/library/${libraryId}/play/${file.id}`, { state: { title: file.filename } });
+      onVideoClick(file);
     } else if (file.file_type === 'image') {
       onImageClick(file.id);
     }
@@ -59,7 +58,7 @@ export default function FileList({
         {files.map((file) => (
           <div key={file.id} className={styles.fileCard} onClick={() => handleFileClick(file)}>
             <div className={styles.thumbnail}>
-              {file.file_type === 'image' && token ? (
+              {token ? (
                 <img
                   src={getThumbnailUrl(file.id, token)}
                   alt={file.filename}

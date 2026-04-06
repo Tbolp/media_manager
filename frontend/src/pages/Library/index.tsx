@@ -12,6 +12,7 @@ import DirBreadcrumb from './DirBreadcrumb';
 import SearchBar from './SearchBar';
 import UploadButton from './UploadButton';
 import ImageLightbox from './ImageLightbox';
+import InlinePlayer from './InlinePlayer';
 
 export default function LibraryPage() {
   const { id: libraryId } = useParams<{ id: string }>();
@@ -36,6 +37,9 @@ export default function LibraryPage() {
   // 灯箱相关
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // 内嵌播放器
+  const [playingFile, setPlayingFile] = useState<FileItem | null>(null);
 
   const imageFiles = files.filter((f) => f.file_type === 'image');
 
@@ -197,28 +201,40 @@ export default function LibraryPage() {
         <DirBreadcrumb
           libraryName={library?.name ?? ''}
           currentPath={currentPath}
-          onNavigate={handleNavigate}
+          onNavigate={(path) => { setPlayingFile(null); handleNavigate(path); }}
         />
       )}
 
-      {/* 文件列表 */}
-      {loading ? (
-        <Skeleton active paragraph={{ rows: 8 }} />
-      ) : files.length === 0 && dirs.length === 0 ? (
-        <Empty description={searchQuery ? '未找到匹配文件' : '当前目录为空'} />
-      ) : (
-        <FileList
-          libraryId={libraryId}
-          files={files}
-          dirs={searchQuery ? [] : dirs}
-          total={total}
-          page={page}
-          pageSize={DEFAULT_PAGE_SIZE}
-          isSearchMode={!!searchQuery}
-          onEnterDir={handleEnterDir}
-          onPageChange={handlePageChange}
-          onImageClick={handleImageClick}
+      {/* 播放中：显示播放器，隐藏文件列表 */}
+      {playingFile ? (
+        <InlinePlayer
+          key={playingFile.id}
+          file={playingFile}
+          onClose={() => setPlayingFile(null)}
         />
+      ) : (
+        <>
+          {/* 文件列表 */}
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 8 }} />
+          ) : files.length === 0 && dirs.length === 0 ? (
+            <Empty description={searchQuery ? '未找到匹配文件' : '当前目录为空'} />
+          ) : (
+            <FileList
+              libraryId={libraryId}
+              files={files}
+              dirs={searchQuery ? [] : dirs}
+              total={total}
+              page={page}
+              pageSize={DEFAULT_PAGE_SIZE}
+              isSearchMode={!!searchQuery}
+              onEnterDir={handleEnterDir}
+              onPageChange={handlePageChange}
+              onImageClick={handleImageClick}
+              onVideoClick={(file) => setPlayingFile(file)}
+            />
+          )}
+        </>
       )}
 
       {/* 图片灯箱 */}

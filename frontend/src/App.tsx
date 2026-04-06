@@ -9,7 +9,6 @@ import InitPage from '@/pages/Init';
 import LoginPage from '@/pages/Login';
 import HomePage from '@/pages/Home';
 import LibraryPage from '@/pages/Library';
-import PlayerPage from '@/pages/Player';
 import UsersPage from '@/pages/Admin/Users';
 import SystemPage from '@/pages/Admin/System';
 
@@ -33,7 +32,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'library/:id', element: <LibraryPage /> },
-      { path: 'library/:id/play/:fid', element: <PlayerPage /> },
       {
         path: 'admin',
         element: <AdminGuard />,
