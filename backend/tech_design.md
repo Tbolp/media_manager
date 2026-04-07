@@ -337,9 +337,16 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 ### 认证
 | 方法 | 路径 | 描述 |
 |------|------|------|
+| GET | `/api/system/status` | 获取系统状态（是否已初始化），**无需鉴权** |
 | POST | `/api/init` | 系统初始化（创建管理员，仅无用户时可用） |
 | POST | `/api/login` | 登录，返回 JWT |
 | POST | `/api/logout` | 登出（递增 token_version） |
+
+**`GET /api/system/status` 响应结构：**
+```json
+{ "initialized": true }
+```
+> `initialized` 为 `false` 表示系统尚未完成初始化（数据库中无任何用户）。移动端在登录页调用此接口，若返回 `false` 则展示"系统尚未完成初始化，请先在电脑端（Web）完成管理员账号创建"提示，不展示登录表单。Web 端在进入任何页面前检查此状态，`false` 时跳转初始化向导页 `/init`。
 
 ### 用户管理（需 admin）
 | 方法 | 路径 | 描述 |
@@ -357,6 +364,7 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 |------|------|------|
 | GET | `/api/libraries` | 媒体库列表（含用户可见范围，每个库附带刷新状态） |
 | POST | `/api/libraries` | 创建媒体库（admin） |
+| GET | `/api/libraries/{id}` | 单个媒体库详情（含刷新状态，供移动端轮询） |
 | PATCH | `/api/libraries/{id}` | 改名（admin） |
 | DELETE | `/api/libraries/{id}` | 删除媒体库（admin，软删除库记录 + 硬删除该库全部 media_files + 清理 `thumbnails/{library_id}/` 缩略图缓存 + cancel 队列） |
 | GET | `/api/libraries/{id}/files` | 目录浏览 + 文件列表（见下方说明） |
@@ -371,12 +379,25 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
       "id": "...",
       "name": "movies",
       "lib_type": "video",
-      "refresh_status": "idle"
+      "refresh_status": "idle",
+      "cover_file_id": "abc123"
     }
   ]
 }
 ```
 > `refresh_status` 取值：`idle`（无任务）、`running`（有任务执行中）、`pending`（仅有待执行任务）。从内存队列的 `currentTask` 和 `len(ch)` 推导。
+>
+> `cover_file_id`：媒体库内按 `indexed_at` 升序取第一个文件的 `id`，库为空时为 `null`。前端用此 ID 拼接缩略图 URL：`GET /api/files/{cover_file_id}/thumbnail?token=<jwt>`。
+
+**`GET /api/libraries/{id}` 响应结构：**
+
+与 `GET /api/libraries` 列表中单个 item 结构相同，包含 `id`、`name`、`lib_type`、`refresh_status`、`cover_file_id` 字段。主要用于移动端媒体库详情页每 5 秒轮询刷新状态——当 `refresh_status` 从 `running`/`pending` 变为 `idle` 时，前端隐藏"正在刷新"横幅并重新拉取文件列表。
+
+**`POST /api/libraries/{id}/refresh` 响应结构：**
+```json
+{ "queued": true }
+```
+> `queued` 为 `true` 表示任务已成功入队；为 `false` 表示该媒体库队列中已有待执行或执行中的全量刷新任务（去重），未重复创建。前端据此显示"刷新任务已在队列中，无需重复提交"提示。
 
 **`GET /api/libraries/{id}/files` 查询参数：**
 - `path`（可选）：当前目录路径前缀，如 `a/b`；不传或传空字符串表示根目录。
@@ -418,7 +439,7 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 | GET | `/api/files/{fid}/raw` | 原图 |
 | GET | `/api/files/{fid}/thumbnail` | 缩略图（~400px，磁盘缓存） |
 
-> 播放类接口同时支持 `Authorization: Bearer <token>` 请求头和 `?token=<jwt>` 查询参数两种鉴权方式。前端播放器/`<img>` 标签等无法设置请求头的场景使用 query 参数方式。AuthMiddleware 优先读取 Header，Header 缺失时回退读取 query 参数。
+> 播放类接口同时支持 `Authorization: Bearer <token>` 请求头和 `?token=<jwt>` 查询参数两种鉴权方式。前端播放器/`<img>` 标签等无法设置请求头的场景使用 query 参数方式。AuthMiddleware 优先读取 Header，Header 缺失时回退读取 query 参数。Query Token 仅用于媒体资源读取类接口（GET stream / raw / thumbnail），不适用于数据修改类接口，避免 CSRF/Referer 泄漏风险。
 
 ### 用户行为
 | 方法 | 路径 | 描述 |
@@ -426,6 +447,12 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 | PUT | `/api/files/{fid}/progress` | 上报播放进度 |
 | GET | `/api/files/{fid}/progress` | 获取当前用户对该文件的播放进度（用于播放页续播） |
 | GET | `/api/behavior/history` | 最近观看历史 |
+
+**`PUT /api/files/{fid}/progress` 请求体：**
+```json
+{ "position": 95.5, "duration": 120.0 }
+```
+> `position`：当前播放秒数；`duration`：视频总时长（冗余，与 `media_files.duration` 一致，用于服务端校验及计算 `is_watched`）。接口幂等，短时间内多次调用以最后一次为准。`position / duration >= 0.9` 时自动将 `is_watched` 标记为 `true`。
 
 ### 系统运维（需 admin）
 | 方法 | 路径 | 描述 |
@@ -456,10 +483,12 @@ var uploadLocks sync.Map // key: uploadKey → *sync.Mutex
 
 ### 8.2 缩略图策略
 
+`GET /api/files/{fid}/thumbnail` 同时支持图片和视频文件。
+
 - 生成时机：首次请求时按需生成（懒加载）。
 - 缓存路径：`thumbnails/{library_id}/{file_id}.jpg`。
-- 生成逻辑：用 `imaging.Open` 打开原图 → `imaging.Resize(img, 400, 0, imaging.Lanczos)` 保持宽高比 → 保存为 JPEG。
-- 原图宽度 ≤ 400px 时直接返回原图，不生成缩略图。
+- **图片**：用 `imaging.Open` 打开原图 → `imaging.Resize(img, 400, 0, imaging.Lanczos)` 保持宽高比 → 保存为 JPEG；原图宽度 ≤ 400px 时直接复制原文件作为缩略图。
+- **视频**：调用 `ffmpeg -ss 1 -i <video> -vframes 1 -vf scale=400:-1 -q:v 3` 提取第 1 秒帧；若失败（视频过短）自动 fallback 到第 0 秒重试；超时限制 15 秒。
 - 并发控制：用 `sync.Map` 维护 per-file 生成锁（key 为 `file_id`），同一文件并发请求时只有一个触发生成，其余等待完成后直接读缓存，避免重复写文件。
 
 ### 8.3 视频流（HTTP Range）
@@ -571,3 +600,7 @@ github.com/google/uuid            v1.6+     # UUID v4 生成
 8. **行为表外键**：`playback_progress` 和 `watch_history` 的 `file_id` 不设外键，媒体库删除后行为数据保留
 9. **数据库迁移**：远期可能切换 MySQL，当前 SQLite 方案不做提前适配；切换时需关注：驱动替换、WAL 移除、UUID 主键改 BINARY(16) 或自增整数、UPSERT 语法差异、goose 迁移文件重写
 10. **刷新队列持久化**：不持久化，进程重启后队列任务丢失符合预期；如需恢复索引，管理员手动触发全量刷新即可
+11. **系统初始化检测**：新增无需鉴权的 `GET /api/system/status` 接口，返回 `{ "initialized": bool }`；移动端登录页和 Web 端均通过此接口判断是否已初始化，而非在 `POST /api/login` 中返回特殊错误码
+12. **媒体库封面**：`GET /api/libraries` 响应中每个库携带 `cover_file_id`（按 `indexed_at` 升序取第一个文件，库为空时为 null），前端拼接缩略图 URL 展示封面
+13. **刷新去重响应**：`POST /api/libraries/{id}/refresh` 返回 `{ "queued": bool }`，`false` 表示该库已有全量刷新任务在队列中或执行中，未重复入队
+14. **Query Token**：`?token=<jwt>` 鉴权方式仅限媒体资源读取接口（stream/raw/thumbnail），用于 Flutter `<Image>` / 视频播放器等无法注入请求头的场景
