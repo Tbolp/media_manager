@@ -43,7 +43,7 @@ export default function LoginPage() {
     setErrorMsg(null);
     try {
       const data = await login(values);
-      setAuth(data.token, data.user);
+      setAuth(data.token);
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/';
       navigate(from, { replace: true });
     } catch (err) {

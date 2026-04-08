@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { decodeJwt } from '@/utils/jwt';
 
 interface User {
   id: string;
@@ -14,10 +15,17 @@ interface AuthState {
   isAdmin: boolean;
   authErrorMessage: string | null;
 
-  setAuth: (token: string, user: User) => void;
+  setAuth: (token: string) => void;
   clearAuth: () => void;
   handleUnauthorized: (errorCode?: string) => void;
   clearAuthError: () => void;
+}
+
+function deriveUser(token: string | null): User | null {
+  if (!token) return null;
+  const payload = decodeJwt(token);
+  if (!payload) return null;
+  return { id: payload.sub, username: payload.name, role: payload.role };
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,8 +37,16 @@ export const useAuthStore = create<AuthState>()(
       isAdmin: false,
       authErrorMessage: null,
 
-      setAuth: (token, user) =>
-        set({ token, user, isLoggedIn: true, isAdmin: user.role === 'admin', authErrorMessage: null }),
+      setAuth: (token) => {
+        const user = deriveUser(token);
+        set({
+          token,
+          user,
+          isLoggedIn: true,
+          isAdmin: user?.role === 'admin',
+          authErrorMessage: null,
+        });
+      },
 
       clearAuth: () =>
         set({ token: null, user: null, isLoggedIn: false, isAdmin: false }),
@@ -50,11 +66,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token, user: state.user }),
+      partialize: (state) => ({ token: state.token }),
       onRehydrateStorage: () => (state) => {
-        if (state?.token && state?.user) {
+        if (state?.token) {
+          const user = deriveUser(state.token);
+          state.user = user;
           state.isLoggedIn = true;
-          state.isAdmin = state.user.role === 'admin';
+          state.isAdmin = user?.role === 'admin';
         }
       },
     }

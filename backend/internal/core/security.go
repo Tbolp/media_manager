@@ -72,12 +72,14 @@ func splitOnce(s string, sep byte) []string {
 
 // JWT
 
-// GenerateToken creates a JWT with sub (userID), ver (token version), and exp.
-func GenerateToken(userID string, tokenVersion int, secret string, expireHours int) (string, error) {
+// GenerateToken creates a JWT with sub (userID), name (username), role, ver (token version), and exp.
+func GenerateToken(userID string, username string, role string, tokenVersion int, secret string, expireHours int) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID,
-		"ver": tokenVersion,
-		"exp": time.Now().Add(time.Duration(expireHours) * time.Hour).Unix(),
+		"sub":  userID,
+		"name": username,
+		"role": role,
+		"ver":  tokenVersion,
+		"exp":  time.Now().Add(time.Duration(expireHours) * time.Hour).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secret))

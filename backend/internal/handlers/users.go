@@ -193,7 +193,7 @@ func HandleResetPassword(c *gin.Context) {
 		// Re-fetch to get updated token_version
 		updated, _ := services.GetUserByID(targetID)
 		if updated != nil {
-			token, err := core.GenerateToken(updated.ID, updated.TokenVersion, config.C.JWTSecret, config.C.TokenExpireHours)
+			token, err := core.GenerateToken(updated.ID, updated.Username, updated.Role, updated.TokenVersion, config.C.JWTSecret, config.C.TokenExpireHours)
 			if err == nil {
 				c.JSON(http.StatusOK, gin.H{"detail": "密码已重置", "token": token})
 				return

@@ -76,7 +76,7 @@ func HandleLogin(c *gin.Context) {
 		return
 	}
 
-	token, err := core.GenerateToken(user.ID, user.TokenVersion, config.C.JWTSecret, config.C.TokenExpireHours)
+	token, err := core.GenerateToken(user.ID, user.Username, user.Role, user.TokenVersion, config.C.JWTSecret, config.C.TokenExpireHours)
 	if err != nil {
 		core.RespondInternalError(c)
 		return

@@ -8,7 +8,7 @@
 | Web 框架 | Gin | 成熟、高性能，中间件生态完善；内置流式响应支持 |
 | 数据库驱动 | `modernc.org/sqlite`（纯 Go，无 CGO）+ `jmoiron/sqlx` | 零外部依赖，sqlx 提供结构体映射便利性；连接初始化时启用 WAL 模式 |
 | 数据迁移 | goose（SQL 文件方式） | SQL 迁移文件版本化管理，语法直接 |
-| 认证 | JWT（`golang-jwt/jwt/v5`）+ Argon2 密码哈希（`golang.org/x/crypto`） | JWT payload 携带版本号，实现 Token 即时失效 |
+| 认证 | JWT（`golang-jwt/jwt/v5`）+ Argon2 密码哈希（`golang.org/x/crypto`） | JWT payload 携带用户名与版本号，实现 Token 即时失效 |
 | 图片处理 | `disintegration/imaging` | 生成缩略图（约 400px 宽），缓存至磁盘 |
 | 视频时长读取 | `ffprobe`（系统依赖，启动时强制检测） | 索引时读取 mp4 时长，未安装则拒绝启动 |
 | 任务队列 | goroutine + `chan RefreshTask` | 每个媒体库一个独立 channel + goroutine worker，进程内串行执行 |
@@ -182,11 +182,14 @@ UNIQUE (user_id, file_id)
 ```json
 {
   "sub": "用户ID（字符串）",
+  "name": "用户名",
+  "role": "admin | user",
   "ver": 3,
   "exp": 1712345678
 }
 ```
 
+- `name` 为用户名，`role` 为用户角色，前端登录后直接解码 JWT 即可获取完整用户信息，无需额外请求。
 - `ver` 对应 `users.token_version`，每次需要使 Token 立即失效时递增该字段。
 - 校验流程：解码 JWT → 检查 exp → 查用户行 → 按顺序判断：
   1. `is_deleted == true` → 返回 `user_deleted`
