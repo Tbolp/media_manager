@@ -15,19 +15,16 @@ import 'routes.dart';
 
 part 'app_router.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 GoRouter appRouter(AppRouterRef ref) {
-  final authNotifier = ref.watch(authNotifierProvider.notifier);
-
-  // 监听 auth 状态变化以触发路由刷新
-  final authState = ref.watch(authNotifierProvider);
-  final serverUrl = ref.watch(
-    settingsNotifierProvider.select((s) => s.serverUrl),
-  );
-
-  return GoRouter(
+  final router = GoRouter(
     initialLocation: kRouteHome,
     redirect: (context, state) {
+      // 直接 read，不 watch（避免重建 router）
+      final authState = ref.read(authNotifierProvider);
+      final serverUrl = ref.read(settingsNotifierProvider).serverUrl;
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+
       final hasServer = serverUrl.isNotEmpty;
       final isLoggedIn = authState.valueOrNull != null;
       final location = state.uri.path;
@@ -93,4 +90,15 @@ GoRouter appRouter(AppRouterRef ref) {
       ),
     ),
   );
+
+  // 监听 auth 和 serverUrl 变化，只刷新 redirect，不重建 router
+  ref.listen(authNotifierProvider, (_, __) => router.refresh());
+  ref.listen(
+    settingsNotifierProvider.select((s) => s.serverUrl),
+    (_, __) => router.refresh(),
+  );
+
+  ref.onDispose(router.dispose);
+
+  return router;
 }

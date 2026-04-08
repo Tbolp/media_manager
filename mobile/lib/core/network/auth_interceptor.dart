@@ -26,8 +26,9 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // 清除本地 Token
+      // 清除本地 Token 和用户信息
       await _ref.read(secureStorageProvider).deleteToken();
+      await _ref.read(secureStorageProvider).deleteUser();
 
       // 通知 authNotifier 强制登出（延迟调用避免循环依赖）
       final errorCode =

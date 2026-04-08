@@ -95,17 +95,13 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
     final isRefreshing = refreshAsync.valueOrNull?.isRefreshing ?? false;
 
     return PopScope(
-      onPopInvoked: (didPop) {
-        if (didPop && currentPath.isNotEmpty) {
-          // 目录内按返回：回到上级
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ref
-                .read(currentPathProvider(widget.libraryId).notifier)
-                .pop();
-          });
+      canPop: currentPath.isEmpty,
+      onPopInvoked: (_) {
+        if (currentPath.isNotEmpty) {
+          // 子目录：返回上级
+          ref.read(currentPathProvider(widget.libraryId).notifier).pop();
         }
       },
-      canPop: currentPath.isEmpty,
       child: Scaffold(
         appBar: AppBar(
           title: _isSearching
@@ -378,7 +374,7 @@ class _DirectoryView extends ConsumerWidget {
     int index,
   ) {
     if (file.isVideo) {
-      context.go('/library/$libraryId/play/${file.id}');
+      context.push('/library/$libraryId/play/${file.id}');
     } else if (file.isImage) {
       final images = files.where((f) => f.isImage).toList();
       final imageIndex = images.indexWhere((f) => f.id == file.id);
@@ -443,7 +439,7 @@ class _SearchResults extends ConsumerWidget {
                       UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
                   onTap: () {
                     if (file.isVideo) {
-                      context.go('/library/$libraryId/play/${file.id}');
+                      context.push('/library/$libraryId/play/${file.id}');
                     } else if (file.isImage) {
                       final images =
                           files.where((f) => f.isImage).toList();

@@ -24,23 +24,20 @@ class AuthNotifier extends _$AuthNotifier {
       await ref.read(authRepositoryProvider).logout();
     } catch (_) {
       // 登出失败也清除本地状态
+      await ref.read(authRepositoryProvider).deleteToken();
     }
     state = const AsyncValue.data(null);
   }
 
-  /// 启动时恢复会话
+  /// 启动时恢复会话（纯本地读取，不调接口）
   Future<void> restoreSession() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(
-      () => ref.read(authRepositoryProvider).restoreSession(),
-    );
+    final user = await ref.read(authRepositoryProvider).restoreSession();
+    state = AsyncValue.data(user);
   }
 
   /// 由 AuthInterceptor 在 401 时调用
   void forceLogout(String errorCode) {
     state = const AsyncValue.data(null);
-    // 路由守卫会监听此状态并跳转到 /login
-    // errorCode 通过路由参数传递
     _pendingErrorCode = errorCode;
   }
 

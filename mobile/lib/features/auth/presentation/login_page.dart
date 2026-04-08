@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
 import '../../settings/providers/settings_provider.dart';
-import '../../auth/data/auth_repository.dart';
 import 'providers/auth_provider.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -38,7 +37,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (widget.errorCode != null) {
       _errorMessage = _errorMessages[widget.errorCode] ?? '登录已失效，请重新登录';
     }
-    _checkSystemStatus();
   }
 
   @override
@@ -46,33 +44,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkSystemStatus() async {
-    try {
-      final initialized =
-          await ref.read(authRepositoryProvider).getSystemStatus();
-      if (!initialized && mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => AlertDialog(
-            title: const Text('系统未初始化'),
-            content: const Text(
-              '系统尚未完成初始化，请先在电脑端（Web）完成管理员账号创建。',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('我知道了'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (_) {
-      // 忽略检查失败，不阻止登录
-    }
   }
 
   Future<void> _login() async {
@@ -89,15 +60,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             _passwordController.text,
           );
 
+      if (!mounted) return;
+
       final authState = ref.read(authNotifierProvider);
       if (authState.hasValue && authState.valueOrNull != null) {
-        if (mounted) context.go(kRouteHome);
+        context.go(kRouteHome);
       } else if (authState.hasError) {
-        final error = authState.error;
         setState(() {
-          _errorMessage = _parseLoginError(error);
+          _errorMessage = _parseLoginError(authState.error);
         });
       }
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = _parseLoginError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -118,124 +92,189 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final serverUrl = ref.watch(
       settingsNotifierProvider.select((s) => s.serverUrl),
     );
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.movie_outlined, size: 72, color: Colors.blue),
-                const SizedBox(height: 16),
-                Text(
-                  '家庭影院',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 40),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (_errorMessage != null) ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Text(
-                                _errorMessage!,
-                                style: TextStyle(color: Colors.red.shade700),
-                              ),
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Logo & 标题 ──────────────────────────────────────
+                  const SizedBox(height: 16),
+                  Icon(
+                    Icons.movie_outlined,
+                    size: 64,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '家庭影院',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '欢迎回来，请登录您的账号',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // ── 输入区域 ─────────────────────────────────────────
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // ── 错误提示 ───────────────────────────────────
+                        if (_errorMessage != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(height: 16),
-                          ],
-                          TextFormField(
-                            controller: _usernameController,
-                            keyboardType: TextInputType.text,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
-                            decoration: const InputDecoration(
-                              labelText: '用户名',
-                              prefixIcon: Icon(Icons.person_outline),
-                              border: OutlineInputBorder(),
+                            child: Row(
+                              children: [
+                                Icon(Icons.error_outline,
+                                    color: colorScheme.onErrorContainer,
+                                    size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                        color: colorScheme.onErrorContainer),
+                                  ),
+                                ),
+                              ],
                             ),
-                            validator: (v) =>
-                                (v == null || v.trim().isEmpty) ? '请输入用户名' : null,
                           ),
                           const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.password],
-                            onFieldSubmitted: (_) => _login(),
-                            decoration: InputDecoration(
-                              labelText: '密码',
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              border: const OutlineInputBorder(),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_off_outlined
-                                      : Icons.visibility_outlined,
-                                ),
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
+                        ],
+                        TextFormField(
+                          controller: _usernameController,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
+                          decoration: InputDecoration(
+                            labelText: '用户名',
+                            hintText: '请输入用户名',
+                            prefixIcon: const Icon(Icons.person_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surfaceVariant
+                                .withOpacity(0.4),
+                          ),
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? '请输入用户名' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.done,
+                          enableSuggestions: false,
+                          autocorrect: false,
+                          onFieldSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: '密码',
+                            hintText: '请输入密码',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: colorScheme.surfaceVariant
+                                .withOpacity(0.4),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
                               ),
                             ),
-                            validator: (v) =>
-                                (v == null || v.isEmpty) ? '请输入密码' : null,
                           ),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: _isLoading ? null : _login,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text('登录'),
-                          ),
-                        ],
-                      ),
+                          validator: null,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      serverUrl.isEmpty ? '未配置服务器' : serverUrl,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
-                    ),
-                    const SizedBox(width: 4),
-                    TextButton(
-                      onPressed: () => context.go(kRouteServer),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(44, 44),
+
+                  // ── 登录按钮 ─────────────────────────────────────────
+                  const SizedBox(height: 32),
+                  FilledButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text('修改'),
                     ),
-                  ],
-                ),
-              ],
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            '登 录',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                  ),
+
+                  // ── 服务器信息 ────────────────────────────────────────
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.dns_outlined,
+                          size: 14, color: colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          serverUrl.isEmpty ? '未配置服务器' : serverUrl,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      TextButton(
+                        onPressed: () => context.go(kRouteServer),
+                        style: TextButton.styleFrom(
+                          padding:
+                              const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(44, 36),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text('修改'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

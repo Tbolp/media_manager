@@ -86,7 +86,7 @@ class HomePage extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: LibraryCard(
                   library: libraries[i],
-                  onTap: () => context.go('/library/${libraries[i].id}'),
+                  onTap: () => context.push('/library/${libraries[i].id}'),
                 ),
               ),
             ),

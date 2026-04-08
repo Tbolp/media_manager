@@ -18,12 +18,13 @@ Future<void> main() async {
   // 提前获取 SharedPreferences 实例
   final prefs = await SharedPreferences.getInstance();
 
-  // 在 runApp 之前完成 session 恢复，避免构建期间出现 provider 状态变更
   final container = ProviderContainer(
     overrides: [
       prefsStorageProvider.overrideWithValue(PrefsStorageService(prefs)),
     ],
   );
+
+  // 纯本地读取，有 token+用户信息就直接进首页
   await container.read(authNotifierProvider.notifier).restoreSession();
 
   runApp(
