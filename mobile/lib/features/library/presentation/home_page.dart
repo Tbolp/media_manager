@@ -21,7 +21,7 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('家庭影院'),
+        title: const Text('媒体库'),
         actions: [
           PopupMenuButton<String>(
             icon: CircleAvatar(
@@ -37,6 +37,14 @@ class HomePage extends ConsumerWidget {
               }
             },
             itemBuilder: (_) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Text(
+                  user?.username ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'logout',
                 child: Row(

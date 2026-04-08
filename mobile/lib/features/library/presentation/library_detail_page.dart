@@ -90,8 +90,13 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
       },
     );
 
-    final libraryName =
-        refreshAsync.valueOrNull?.name ?? '媒体库';
+    final libraryName = ref
+            .watch(librariesProvider)
+            .valueOrNull
+            ?.where((l) => l.id == widget.libraryId)
+            .firstOrNull
+            ?.name ??
+        '';
     final isRefreshing = refreshAsync.valueOrNull?.isRefreshing ?? false;
 
     return PopScope(
@@ -154,14 +159,6 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
           children: [
             // 刷新横幅
             if (isRefreshing) const RefreshBanner(),
-
-            // 面包屑（非根目录时显示）
-            if (currentPath.isNotEmpty && !_isSearching)
-              _BreadcrumbRow(
-                libraryId: widget.libraryId,
-                path: currentPath,
-                libraryName: libraryName,
-              ),
 
             // 内容区域
             Expanded(
@@ -281,41 +278,40 @@ class _DirectoryView extends ConsumerWidget {
         }
 
         if (viewMode == ViewMode.grid && files.isNotEmpty) {
-          // 网格模式（相机库）
+          // 网格模式：目录和文件混合展示
+          final totalCount = dirs.length + files.length;
           return CustomScrollView(
             slivers: [
-              if (dirs.isNotEmpty)
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) => _DirTile(
-                      name: dirs[i],
-                      onTap: () => notifier.navigate(
-                        path.isEmpty ? dirs[i] : '$path/${dirs[i]}',
-                      ),
-                    ),
-                    childCount: dirs.length,
-                  ),
-                ),
               SliverPadding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(8),
                 sliver: SliverGrid(
                   gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    childAspectRatio: 0.85,
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (_, i) {
-                      final file = files[i];
+                      if (i < dirs.length) {
+                        return _DirGridTile(
+                          name: dirs[i],
+                          onTap: () => notifier.navigate(
+                            path.isEmpty ? dirs[i] : '$path/${dirs[i]}',
+                          ),
+                        );
+                      }
+                      final file = files[i - dirs.length];
                       return FileGridTile(
                         file: file,
                         thumbnailUrl: UrlBuilder.thumbnailUrl(
                             baseUrl, file.id, token),
-                        onTap: () => _onFileTap(context, file, files, i),
+                        onTap: () => _onFileTap(
+                            context, file, files, i - dirs.length),
                       );
                     },
-                    childCount: files.length,
+                    childCount: totalCount,
                   ),
                 ),
               ),
@@ -482,7 +478,57 @@ class _SearchResults extends ConsumerWidget {
 }
 
 // ──────────────────────────────────────────────
-// 目录 Tile
+// 目录 Grid Tile
+// ──────────────────────────────────────────────
+class _DirGridTile extends StatelessWidget {
+  const _DirGridTile({required this.name, required this.onTap});
+
+  final String name;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                color: Colors.grey.shade200,
+                child: Center(
+                  child: Icon(
+                    Icons.folder_outlined,
+                    color: Colors.grey.shade600,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: SizedBox(
+                height: 32,
+                child: Text(
+                  name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 目录 List Tile
 // ──────────────────────────────────────────────
 class _DirTile extends StatelessWidget {
   const _DirTile({required this.name, required this.onTap});
@@ -493,10 +539,23 @@ class _DirTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.folder_outlined),
-      title: Text(name),
-      trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          width: 80,
+          height: 52,
+          color: Colors.grey.shade200,
+          child: Icon(
+            Icons.folder_outlined,
+            color: Colors.grey.shade600,
+            size: 28,
+          ),
+        ),
+      ),
+      title: Text(name, overflow: TextOverflow.ellipsis),
     );
   }
 }

@@ -13,7 +13,7 @@ class SecureStorageService {
 
   final FlutterSecureStorage _storage;
 
-  // Token
+  // Token（用户信息直接从 JWT payload 解析，无需额外存储）
   Future<String?> getToken() => _storage.read(key: AppConstants.keyAuthToken);
 
   Future<void> saveToken(String token) =>
@@ -22,26 +22,6 @@ class SecureStorageService {
   Future<void> deleteToken() =>
       _storage.delete(key: AppConstants.keyAuthToken);
 
-  // 用户信息（登录时保存，恢复会话时读取）
-  Future<void> saveUser(String id, String username, String role) async {
-    await _storage.write(key: '${AppConstants.keyAuthToken}_user_id', value: id);
-    await _storage.write(key: '${AppConstants.keyAuthToken}_username', value: username);
-    await _storage.write(key: '${AppConstants.keyAuthToken}_role', value: role);
-  }
-
-  Future<Map<String, String>?> getUser() async {
-    final id = await _storage.read(key: '${AppConstants.keyAuthToken}_user_id');
-    final username = await _storage.read(key: '${AppConstants.keyAuthToken}_username');
-    final role = await _storage.read(key: '${AppConstants.keyAuthToken}_role');
-    if (id == null || username == null || role == null) return null;
-    return {'id': id, 'username': username, 'role': role};
-  }
-
-  Future<void> deleteUser() async {
-    await _storage.delete(key: '${AppConstants.keyAuthToken}_user_id');
-    await _storage.delete(key: '${AppConstants.keyAuthToken}_username');
-    await _storage.delete(key: '${AppConstants.keyAuthToken}_role');
-  }
 }
 
 @riverpod

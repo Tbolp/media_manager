@@ -22,7 +22,7 @@ class PrefsStorageService {
 
   ViewMode getViewMode() {
     final raw = _prefs.getString(AppConstants.keyLibraryViewMode);
-    return raw == 'grid' ? ViewMode.grid : ViewMode.list;
+    return raw == 'list' ? ViewMode.list : ViewMode.grid;
   }
 
   Future<void> setViewMode(ViewMode mode) =>

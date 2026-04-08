@@ -29,6 +29,9 @@ GoRouter appRouter(AppRouterRef ref) {
       final isLoggedIn = authState.valueOrNull != null;
       final location = state.uri.path;
 
+      debugPrint(
+          '[Router] redirect: location=$location, hasServer=$hasServer, isLoggedIn=$isLoggedIn, authState=$authState');
+
       // 未配置服务器 → /server（除非已在 /server）
       if (!hasServer && location != kRouteServer) {
         return kRouteServer;
@@ -48,8 +51,7 @@ GoRouter appRouter(AppRouterRef ref) {
       }
 
       // 已登录时访问 /login 或 /server → 跳到首页
-      if (isLoggedIn &&
-          (location == kRouteLogin || location == kRouteServer)) {
+      if (isLoggedIn && (location == kRouteLogin || location == kRouteServer)) {
         return kRouteHome;
       }
 

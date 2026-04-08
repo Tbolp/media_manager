@@ -105,16 +105,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // ── Logo & 标题 ──────────────────────────────────────
+                  // ── 欢迎语 ──────────────────────────────────────
                   const SizedBox(height: 16),
-                  Icon(
-                    Icons.movie_outlined,
-                    size: 64,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
                   Text(
-                    '家庭影院',
+                    '欢迎回来',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -122,7 +116,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '欢迎回来，请登录您的账号',
+                    '请登录您的账号',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,

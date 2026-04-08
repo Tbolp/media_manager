@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/router/app_router.dart';
-import 'shared/widgets/network_banner.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -21,17 +20,6 @@ class App extends ConsumerWidget {
         useMaterial3: true,
       ),
       routerConfig: router,
-      builder: (context, child) {
-        return Stack(
-          children: [
-            child ?? const SizedBox.expand(),
-            const Align(
-              alignment: Alignment.topCenter,
-              child: NetworkBanner(),
-            ),
-          ],
-        );
-      },
     );
   }
 }
