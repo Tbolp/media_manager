@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/routes.dart';
-import '../../../shared/widgets/skeleton_list.dart';
+import '../../../shared/utils/url_builder.dart';
+import '../../../shared/widgets/skeleton_grid.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../settings/providers/settings_provider.dart';
+import '../data/library_repository.dart';
 import 'providers/library_provider.dart';
 import 'widgets/library_card.dart';
 
@@ -18,6 +21,12 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final librariesAsync = ref.watch(librariesProvider);
     final user = ref.watch(authNotifierProvider.select((s) => s.valueOrNull));
+    final baseUrl =
+        ref.watch(settingsNotifierProvider.select((s) => s.serverUrl));
+    final token = ref.watch(
+          authNotifierProvider.select((s) => s.valueOrNull?.token),
+        ) ??
+        '';
 
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +69,7 @@ class HomePage extends ConsumerWidget {
         ],
       ),
       body: librariesAsync.when(
-        loading: () => const SkeletonList(),
+        loading: () => const SkeletonGrid(),
         error: (err, _) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -87,16 +96,39 @@ class HomePage extends ConsumerWidget {
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(librariesProvider),
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: libraries.length,
-              itemBuilder: (_, i) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: LibraryCard(
-                  library: libraries[i],
-                  onTap: () => context.push('/library/${libraries[i].id}'),
-                ),
+            child: GridView.builder(
+              padding: const EdgeInsets.all(8),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: 0.85,
               ),
+              itemCount: libraries.length,
+              itemBuilder: (_, i) {
+                final library = libraries[i];
+                final coverUrl = library.coverFileId != null
+                    ? UrlBuilder.thumbnailUrl(
+                        baseUrl, library.coverFileId!, token)
+                    : null;
+                return LibraryCard(
+                  library: library,
+                  thumbnailUrl: coverUrl,
+                  onTap: () => context.push('/library/${library.id}'),
+                  onRefresh: () async {
+                    final queued = await ref
+                        .read(libraryRepositoryProvider)
+                        .triggerRefresh(library.id);
+                    if (!context.mounted) return;
+                    if (!queued) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('刷新任务已在队列中，无需重复提交')),
+                      );
+                    }
+                  },
+                );
+              },
             ),
           );
         },

@@ -267,6 +267,7 @@ class _DirectoryView extends ConsumerWidget {
       data: (content) {
         final dirs = content.dirs;
         final files = content.files;
+        final hasMore = content.hasMore;
         final notifier =
             ref.read(currentPathProvider(libraryId).notifier);
 
@@ -277,89 +278,134 @@ class _DirectoryView extends ConsumerWidget {
           );
         }
 
-        if (viewMode == ViewMode.grid && files.isNotEmpty) {
-          // 网格模式：目录和文件混合展示
-          final totalCount = dirs.length + files.length;
-          return CustomScrollView(
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.all(8),
-                sliver: SliverGrid(
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 0.85,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) {
-                      if (i < dirs.length) {
-                        return _DirGridTile(
-                          name: dirs[i],
-                          onTap: () => notifier.navigate(
-                            path.isEmpty ? dirs[i] : '$path/${dirs[i]}',
-                          ),
-                        );
-                      }
-                      final file = files[i - dirs.length];
-                      return FileGridTile(
-                        file: file,
-                        thumbnailUrl: UrlBuilder.thumbnailUrl(
-                            baseUrl, file.id, token),
-                        onTap: () => _onFileTap(
-                            context, file, files, i - dirs.length),
-                      );
-                    },
-                    childCount: totalCount,
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-
-        // 列表模式
-        final allItems = <_ListItem>[
-          ...dirs.map(
-            (d) => _ListItem.dir(
-              name: d,
-              onTap: () => notifier.navigate(
-                path.isEmpty ? d : '$path/$d',
-              ),
-            ),
-          ),
-          ...files.map(
-            (f) => _ListItem.file(
-              file: f,
-              onTap: () => _onFileTap(context, f, files,
-                  files.indexOf(f)),
-            ),
-          ),
-        ];
-
-        return RefreshIndicator(
-          onRefresh: () async =>
-              ref.invalidate(directoryContentProvider(libraryId, path)),
-          child: ListView.builder(
-            itemCount: allItems.length,
-            itemBuilder: (_, i) {
-              final item = allItems[i];
-              if (item.isDir) {
-                return _DirTile(
-                    name: item.name!, onTap: item.onTap);
-              }
-              final file = item.file!;
-              return FileListTile(
-                file: file,
-                thumbnailUrl:
-                    UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
-                onTap: item.onTap,
-              );
-            },
-          ),
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            if (hasMore &&
+                notification.metrics.pixels >=
+                    notification.metrics.maxScrollExtent - 200) {
+              ref
+                  .read(directoryContentProvider(libraryId, path).notifier)
+                  .loadMore();
+            }
+            return false;
+          },
+          child: viewMode == ViewMode.grid
+              ? _buildGrid(context, dirs, files, hasMore, notifier, ref)
+              : _buildList(context, dirs, files, hasMore, notifier, ref),
         );
       },
+    );
+  }
+
+  Widget _buildGrid(
+    BuildContext context,
+    List<String> dirs,
+    List<FileModel> files,
+    bool hasMore,
+    CurrentPath notifier,
+    WidgetRef ref,
+  ) {
+    final totalCount = dirs.length + files.length;
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(8),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 0.85,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (_, i) {
+                if (i < dirs.length) {
+                  return _DirGridTile(
+                    name: dirs[i],
+                    onTap: () => notifier.navigate(
+                      path.isEmpty ? dirs[i] : '$path/${dirs[i]}',
+                    ),
+                  );
+                }
+                final file = files[i - dirs.length];
+                return FileGridTile(
+                  file: file,
+                  thumbnailUrl:
+                      UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
+                  onTap: () =>
+                      _onFileTap(context, file, files, i - dirs.length),
+                );
+              },
+              childCount: totalCount,
+            ),
+          ),
+        ),
+        if (hasMore)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildList(
+    BuildContext context,
+    List<String> dirs,
+    List<FileModel> files,
+    bool hasMore,
+    CurrentPath notifier,
+    WidgetRef ref,
+  ) {
+    final allItems = <_ListItem>[
+      ...dirs.map(
+        (d) => _ListItem.dir(
+          name: d,
+          onTap: () => notifier.navigate(
+            path.isEmpty ? d : '$path/$d',
+          ),
+        ),
+      ),
+      ...files.map(
+        (f) => _ListItem.file(
+          file: f,
+          onTap: () =>
+              _onFileTap(context, f, files, files.indexOf(f)),
+        ),
+      ),
+    ];
+
+    return RefreshIndicator(
+      onRefresh: () async =>
+          ref.invalidate(directoryContentProvider(libraryId, path)),
+      child: ListView.builder(
+        itemCount: allItems.length + (hasMore ? 1 : 0),
+        itemBuilder: (_, i) {
+          if (i >= allItems.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }
+          final item = allItems[i];
+          if (item.isDir) {
+            return _DirTile(name: item.name!, onTap: item.onTap);
+          }
+          final file = item.file!;
+          return FileListTile(
+            file: file,
+            thumbnailUrl:
+                UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
+            onTap: item.onTap,
+          );
+        },
+      ),
     );
   }
 
@@ -370,7 +416,7 @@ class _DirectoryView extends ConsumerWidget {
     int index,
   ) {
     if (file.isVideo) {
-      context.push('/library/$libraryId/play/${file.id}');
+      context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
     } else if (file.isImage) {
       final images = files.where((f) => f.isImage).toList();
       final imageIndex = images.indexWhere((f) => f.id == file.id);
@@ -435,7 +481,7 @@ class _SearchResults extends ConsumerWidget {
                       UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
                   onTap: () {
                     if (file.isVideo) {
-                      context.push('/library/$libraryId/play/${file.id}');
+                      context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
                     } else if (file.isImage) {
                       final images =
                           files.where((f) => f.isImage).toList();

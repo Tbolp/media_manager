@@ -19,8 +19,9 @@ class LibraryRepository {
 
   Future<LibraryModel> getLibrary(String id) => _api.getLibrary(id);
 
-  Future<DirectoryContent> listDirectory(String libraryId, String path) =>
-      _api.listDirectory(libraryId, path);
+  Future<DirectoryContent> listDirectory(String libraryId, String path,
+          {int page = 1}) =>
+      _api.listDirectory(libraryId, path, page: page);
 
   Future<List<FileModel>> searchFiles(String libraryId, String keyword) =>
       _api.searchFiles(libraryId, keyword);

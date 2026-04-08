@@ -1,50 +1,35 @@
 // lib/features/library/presentation/widgets/library_card.dart
-// 首页媒体库卡片
+// 首页媒体库网格卡片（上图下标题，右下角刷新按钮）
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../features/auth/presentation/providers/auth_provider.dart';
-import '../../../../features/library/data/library_repository.dart';
-import '../../../../features/settings/providers/settings_provider.dart';
-import '../../../../shared/utils/url_builder.dart';
 import '../../domain/library_model.dart';
 
-class LibraryCard extends ConsumerStatefulWidget {
+class LibraryCard extends StatefulWidget {
   const LibraryCard({
     super.key,
     required this.library,
+    required this.thumbnailUrl,
     required this.onTap,
+    required this.onRefresh,
   });
 
   final LibraryModel library;
+  final String? thumbnailUrl;
   final VoidCallback onTap;
+  final Future<void> Function() onRefresh;
 
   @override
-  ConsumerState<LibraryCard> createState() => _LibraryCardState();
+  State<LibraryCard> createState() => _LibraryCardState();
 }
 
-class _LibraryCardState extends ConsumerState<LibraryCard> {
+class _LibraryCardState extends State<LibraryCard> {
   bool _refreshLoading = false;
 
   Future<void> _triggerRefresh() async {
     setState(() => _refreshLoading = true);
     try {
-      final queued = await ref
-          .read(libraryRepositoryProvider)
-          .triggerRefresh(widget.library.id);
-      if (!mounted) return;
-      if (!queued) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('刷新任务已在队列中，无需重复提交')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('触发刷新失败：$e')),
-        );
-      }
+      await widget.onRefresh();
     } finally {
       if (mounted) setState(() => _refreshLoading = false);
     }
@@ -52,74 +37,69 @@ class _LibraryCardState extends ConsumerState<LibraryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final library = widget.library;
-    final baseUrl =
-        ref.watch(settingsNotifierProvider.select((s) => s.serverUrl));
-    final token = ref.watch(
-          authNotifierProvider.select((s) => s.valueOrNull?.token),
-        ) ??
-        '';
-
-    final coverUrl = library.coverFileId != null
-        ? UrlBuilder.thumbnailUrl(baseUrl, library.coverFileId!, token)
-        : null;
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: widget.onTap,
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 封面图
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: coverUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: coverUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => _PlaceholderCover(library),
-                      errorWidget: (_, __, ___) => _PlaceholderCover(library),
-                    )
-                  : _PlaceholderCover(library),
-            ),
-            // 信息栏
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Icon(
-                    library.isCamera
-                        ? Icons.camera_alt_outlined
-                        : Icons.movie_outlined,
-                    size: 18,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      library.name,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // 刷新按钮（阻断点击冒泡）
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _triggerRefresh,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: _refreshLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.refresh_outlined, size: 20),
+                  widget.thumbnailUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: widget.thumbnailUrl!,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              _PlaceholderCover(widget.library),
+                          errorWidget: (_, __, ___) =>
+                              _PlaceholderCover(widget.library),
+                        )
+                      : _PlaceholderCover(widget.library),
+                  Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: GestureDetector(
+                      onTap: _triggerRefresh,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black38,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: _refreshLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.refresh_outlined,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                      ),
                     ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: SizedBox(
+                height: 32,
+                child: Text(
+                  widget.library.name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ),
           ],
@@ -143,7 +123,7 @@ class _PlaceholderCover extends StatelessWidget {
           library.isCamera
               ? Icons.camera_alt_outlined
               : Icons.movie_outlined,
-          size: 48,
+          size: 40,
           color: Colors.grey.shade400,
         ),
       ),

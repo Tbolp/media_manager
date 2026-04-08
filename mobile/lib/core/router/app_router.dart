@@ -83,6 +83,7 @@ GoRouter appRouter(AppRouterRef ref) {
         builder: (_, state) => VideoPlayerPage(
           libraryId: state.pathParameters['libraryId']!,
           fileId: state.pathParameters['fileId']!,
+          title: state.uri.queryParameters['title'] ?? '',
         ),
       ),
     ],

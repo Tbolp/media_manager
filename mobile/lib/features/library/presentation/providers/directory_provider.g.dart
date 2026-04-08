@@ -6,7 +6,7 @@ part of 'directory_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$directoryContentHash() => r'951cd07403acf1d083495ecbbc22bf94f3573360';
+String _$searchFilesHash() => r'c3d0719318c98ba5ce874b8f7a2928c3a3966a4f';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -28,165 +28,6 @@ class _SystemHash {
     return 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
   }
 }
-
-/// 当前目录的内容
-///
-/// Copied from [directoryContent].
-@ProviderFor(directoryContent)
-const directoryContentProvider = DirectoryContentFamily();
-
-/// 当前目录的内容
-///
-/// Copied from [directoryContent].
-class DirectoryContentFamily extends Family<AsyncValue<DirectoryContent>> {
-  /// 当前目录的内容
-  ///
-  /// Copied from [directoryContent].
-  const DirectoryContentFamily();
-
-  /// 当前目录的内容
-  ///
-  /// Copied from [directoryContent].
-  DirectoryContentProvider call(
-    String libraryId,
-    String path,
-  ) {
-    return DirectoryContentProvider(
-      libraryId,
-      path,
-    );
-  }
-
-  @override
-  DirectoryContentProvider getProviderOverride(
-    covariant DirectoryContentProvider provider,
-  ) {
-    return call(
-      provider.libraryId,
-      provider.path,
-    );
-  }
-
-  static const Iterable<ProviderOrFamily>? _dependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
-
-  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
-
-  @override
-  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
-      _allTransitiveDependencies;
-
-  @override
-  String? get name => r'directoryContentProvider';
-}
-
-/// 当前目录的内容
-///
-/// Copied from [directoryContent].
-class DirectoryContentProvider
-    extends AutoDisposeFutureProvider<DirectoryContent> {
-  /// 当前目录的内容
-  ///
-  /// Copied from [directoryContent].
-  DirectoryContentProvider(
-    String libraryId,
-    String path,
-  ) : this._internal(
-          (ref) => directoryContent(
-            ref as DirectoryContentRef,
-            libraryId,
-            path,
-          ),
-          from: directoryContentProvider,
-          name: r'directoryContentProvider',
-          debugGetCreateSourceHash:
-              const bool.fromEnvironment('dart.vm.product')
-                  ? null
-                  : _$directoryContentHash,
-          dependencies: DirectoryContentFamily._dependencies,
-          allTransitiveDependencies:
-              DirectoryContentFamily._allTransitiveDependencies,
-          libraryId: libraryId,
-          path: path,
-        );
-
-  DirectoryContentProvider._internal(
-    super._createNotifier, {
-    required super.name,
-    required super.dependencies,
-    required super.allTransitiveDependencies,
-    required super.debugGetCreateSourceHash,
-    required super.from,
-    required this.libraryId,
-    required this.path,
-  }) : super.internal();
-
-  final String libraryId;
-  final String path;
-
-  @override
-  Override overrideWith(
-    FutureOr<DirectoryContent> Function(DirectoryContentRef provider) create,
-  ) {
-    return ProviderOverride(
-      origin: this,
-      override: DirectoryContentProvider._internal(
-        (ref) => create(ref as DirectoryContentRef),
-        from: from,
-        name: null,
-        dependencies: null,
-        allTransitiveDependencies: null,
-        debugGetCreateSourceHash: null,
-        libraryId: libraryId,
-        path: path,
-      ),
-    );
-  }
-
-  @override
-  AutoDisposeFutureProviderElement<DirectoryContent> createElement() {
-    return _DirectoryContentProviderElement(this);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is DirectoryContentProvider &&
-        other.libraryId == libraryId &&
-        other.path == path;
-  }
-
-  @override
-  int get hashCode {
-    var hash = _SystemHash.combine(0, runtimeType.hashCode);
-    hash = _SystemHash.combine(hash, libraryId.hashCode);
-    hash = _SystemHash.combine(hash, path.hashCode);
-
-    return _SystemHash.finish(hash);
-  }
-}
-
-mixin DirectoryContentRef on AutoDisposeFutureProviderRef<DirectoryContent> {
-  /// The parameter `libraryId` of this provider.
-  String get libraryId;
-
-  /// The parameter `path` of this provider.
-  String get path;
-}
-
-class _DirectoryContentProviderElement
-    extends AutoDisposeFutureProviderElement<DirectoryContent>
-    with DirectoryContentRef {
-  _DirectoryContentProviderElement(super.provider);
-
-  @override
-  String get libraryId => (origin as DirectoryContentProvider).libraryId;
-  @override
-  String get path => (origin as DirectoryContentProvider).path;
-}
-
-String _$searchFilesHash() => r'c3d0719318c98ba5ce874b8f7a2928c3a3966a4f';
 
 /// 搜索结果
 ///
@@ -496,6 +337,186 @@ class _CurrentPathProviderElement
 
   @override
   String get libraryId => (origin as CurrentPathProvider).libraryId;
+}
+
+String _$directoryContentHash() => r'6e934baecb07e13ad9a08669e022039ab3506a51';
+
+abstract class _$DirectoryContent
+    extends BuildlessAutoDisposeAsyncNotifier<AccumulatedContent> {
+  late final String libraryId;
+  late final String path;
+
+  FutureOr<AccumulatedContent> build(
+    String libraryId,
+    String path,
+  );
+}
+
+/// 当前目录的内容（支持分页累加）
+///
+/// Copied from [DirectoryContent].
+@ProviderFor(DirectoryContent)
+const directoryContentProvider = DirectoryContentFamily();
+
+/// 当前目录的内容（支持分页累加）
+///
+/// Copied from [DirectoryContent].
+class DirectoryContentFamily extends Family<AsyncValue<AccumulatedContent>> {
+  /// 当前目录的内容（支持分页累加）
+  ///
+  /// Copied from [DirectoryContent].
+  const DirectoryContentFamily();
+
+  /// 当前目录的内容（支持分页累加）
+  ///
+  /// Copied from [DirectoryContent].
+  DirectoryContentProvider call(
+    String libraryId,
+    String path,
+  ) {
+    return DirectoryContentProvider(
+      libraryId,
+      path,
+    );
+  }
+
+  @override
+  DirectoryContentProvider getProviderOverride(
+    covariant DirectoryContentProvider provider,
+  ) {
+    return call(
+      provider.libraryId,
+      provider.path,
+    );
+  }
+
+  static const Iterable<ProviderOrFamily>? _dependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get dependencies => _dependencies;
+
+  static const Iterable<ProviderOrFamily>? _allTransitiveDependencies = null;
+
+  @override
+  Iterable<ProviderOrFamily>? get allTransitiveDependencies =>
+      _allTransitiveDependencies;
+
+  @override
+  String? get name => r'directoryContentProvider';
+}
+
+/// 当前目录的内容（支持分页累加）
+///
+/// Copied from [DirectoryContent].
+class DirectoryContentProvider extends AutoDisposeAsyncNotifierProviderImpl<
+    DirectoryContent, AccumulatedContent> {
+  /// 当前目录的内容（支持分页累加）
+  ///
+  /// Copied from [DirectoryContent].
+  DirectoryContentProvider(
+    String libraryId,
+    String path,
+  ) : this._internal(
+          () => DirectoryContent()
+            ..libraryId = libraryId
+            ..path = path,
+          from: directoryContentProvider,
+          name: r'directoryContentProvider',
+          debugGetCreateSourceHash:
+              const bool.fromEnvironment('dart.vm.product')
+                  ? null
+                  : _$directoryContentHash,
+          dependencies: DirectoryContentFamily._dependencies,
+          allTransitiveDependencies:
+              DirectoryContentFamily._allTransitiveDependencies,
+          libraryId: libraryId,
+          path: path,
+        );
+
+  DirectoryContentProvider._internal(
+    super._createNotifier, {
+    required super.name,
+    required super.dependencies,
+    required super.allTransitiveDependencies,
+    required super.debugGetCreateSourceHash,
+    required super.from,
+    required this.libraryId,
+    required this.path,
+  }) : super.internal();
+
+  final String libraryId;
+  final String path;
+
+  @override
+  FutureOr<AccumulatedContent> runNotifierBuild(
+    covariant DirectoryContent notifier,
+  ) {
+    return notifier.build(
+      libraryId,
+      path,
+    );
+  }
+
+  @override
+  Override overrideWith(DirectoryContent Function() create) {
+    return ProviderOverride(
+      origin: this,
+      override: DirectoryContentProvider._internal(
+        () => create()
+          ..libraryId = libraryId
+          ..path = path,
+        from: from,
+        name: null,
+        dependencies: null,
+        allTransitiveDependencies: null,
+        debugGetCreateSourceHash: null,
+        libraryId: libraryId,
+        path: path,
+      ),
+    );
+  }
+
+  @override
+  AutoDisposeAsyncNotifierProviderElement<DirectoryContent, AccumulatedContent>
+      createElement() {
+    return _DirectoryContentProviderElement(this);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DirectoryContentProvider &&
+        other.libraryId == libraryId &&
+        other.path == path;
+  }
+
+  @override
+  int get hashCode {
+    var hash = _SystemHash.combine(0, runtimeType.hashCode);
+    hash = _SystemHash.combine(hash, libraryId.hashCode);
+    hash = _SystemHash.combine(hash, path.hashCode);
+
+    return _SystemHash.finish(hash);
+  }
+}
+
+mixin DirectoryContentRef
+    on AutoDisposeAsyncNotifierProviderRef<AccumulatedContent> {
+  /// The parameter `libraryId` of this provider.
+  String get libraryId;
+
+  /// The parameter `path` of this provider.
+  String get path;
+}
+
+class _DirectoryContentProviderElement
+    extends AutoDisposeAsyncNotifierProviderElement<DirectoryContent,
+        AccumulatedContent> with DirectoryContentRef {
+  _DirectoryContentProviderElement(super.provider);
+
+  @override
+  String get libraryId => (origin as DirectoryContentProvider).libraryId;
+  @override
+  String get path => (origin as DirectoryContentProvider).path;
 }
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

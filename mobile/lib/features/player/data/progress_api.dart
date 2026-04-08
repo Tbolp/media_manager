@@ -8,15 +8,14 @@ class ProgressApi {
 
   final Dio _dio;
 
+  /// 获取播放进度，返回上次播放的 position（秒）
   Future<double?> getProgress(String fileId) async {
     try {
       final resp =
           await _dio.get<Map<String, dynamic>>('/api/files/$fileId/progress');
       final data = resp.data!;
-      final duration = (data['duration'] as num?)?.toDouble();
       final position = (data['position'] as num?)?.toDouble();
-      if (duration == null || duration <= 0) return null;
-      return position! / duration;
+      return position;
     } catch (_) {
       return null;
     }
