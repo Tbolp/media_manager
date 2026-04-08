@@ -1,0 +1,37 @@
+// lib/app.dart
+// App 根 Widget，使用 MaterialApp.router + go_router
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/router/app_router.dart';
+import 'shared/widgets/network_banner.dart';
+
+class App extends ConsumerWidget {
+  const App({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(appRouterProvider);
+
+    return MaterialApp.router(
+      title: '家庭影院',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      routerConfig: router,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child ?? const SizedBox.expand(),
+            const Align(
+              alignment: Alignment.topCenter,
+              child: NetworkBanner(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
