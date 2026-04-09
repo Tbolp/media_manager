@@ -65,12 +65,11 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     // 缓存 progressApi 引用，dispose 时 ref 已不可用
     _progressApi = ref.read(progressApiProvider);
 
-    // 获取保存的进度
-    _progressApi.getProgress(widget.fileId).then((savedPosition) {
-      _controller.initialize(url, savedPositionSeconds: savedPosition);
-    }).catchError((_) {
-      _controller.initialize(url);
-    });
+    // 打开视频 & 获取进度并行执行
+    _controller.initialize(
+      url,
+      progressFuture: _progressApi.getProgress(widget.fileId),
+    );
 
     _controller.addListener(_onControllerChanged);
   }
@@ -162,14 +161,28 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: Column(
-        children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _buildPlayerWithGestures(context),
-          ),
-        ],
+      appBar: AppBar(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _buildPlayerWithGestures(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,5 +1,5 @@
 // lib/features/player/presentation/video_player_controller.dart
-// 视频播放控制器：封装 media_kit Player，提供操作队列和状态管理
+// 视频播放控制器：async/await 简化版
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -8,15 +8,15 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 // ──────────────────────────────────────────────
-// 操作队列
+// 状态
 // ──────────────────────────────────────────────
 
-enum _OpType { play, pause, seek, setRate, other }
-
-class _QueuedOp {
-  const _QueuedOp(this.type, this.execute);
-  final _OpType type;
-  final Future<void> Function() execute;
+enum PlayerState {
+  initializing, // 初始化中（打开视频、拉取进度）
+  buffering, // 缓冲中（seek 等待完成）
+  playing, // 播放中
+  paused, // 暂停中
+  error, // 错误
 }
 
 // ──────────────────────────────────────────────
@@ -24,7 +24,10 @@ class _QueuedOp {
 // ──────────────────────────────────────────────
 
 class VideoPlayerController extends ChangeNotifier {
+  static const _tag = '[VideoPlayerCtrl]';
+
   VideoPlayerController() {
+    debugPrint('$_tag 创建控制器');
     _player = Player();
     _videoController = VideoController(_player);
   }
@@ -33,165 +36,95 @@ class VideoPlayerController extends ChangeNotifier {
   late final VideoController _videoController;
   final List<StreamSubscription> _subs = [];
 
-  // ── 公开状态 ──
+  // ── 状态 ──
 
   VideoController get videoController => _videoController;
 
-  bool _isReady = false;
-  bool get isReady => _isReady;
-
-  bool _isBuffering = false;
-  Duration? _seekTarget;
-  bool get isLoading => _processing || _seekTarget != null || _isBuffering;
-
-  bool _hasError = false;
-  bool get hasError => _hasError;
+  PlayerState _state = PlayerState.initializing;
+  PlayerState get state => _state;
 
   String _errorMessage = '';
   String get errorMessage => _errorMessage;
-
-  bool _isPlaying = false;
-  bool get isPlaying => _isPlaying;
 
   bool _isFullscreen = false;
   bool get isFullscreen => _isFullscreen;
 
   Duration _position = Duration.zero;
-  Duration get position => _seekTarget ?? _position;
+  Duration get position => _position;
 
   Duration _duration = Duration.zero;
   Duration get duration => _duration;
 
-  // ── 操作队列 ──
+  // 连续 seek：只记录最新目标，等当前 seek 完成后再执行
+  Duration? _pendingSeekTarget;
+  bool _isSeeking = false;
+  // seek 前的播放状态，整个 seek 链中只记录第一次
+  PlayerState? _stateBeforeSeek;
 
-  final _queue = <_QueuedOp>[];
-  bool _processing = false;
+  // ── 派生状态（供 UI 使用） ──
 
-  void _enqueue(_OpType type, Future<void> Function() task) {
-    _optimizeQueue(type);
-    _queue.add(_QueuedOp(type, task));
-    if (_processing) return;
-    _processQueue();
-  }
+  bool get isLoading =>
+      _state == PlayerState.initializing || _state == PlayerState.buffering;
+  bool get isPlaying => _state == PlayerState.playing;
+  bool get isPaused => _state == PlayerState.paused;
+  bool get hasError => _state == PlayerState.error;
+  bool get isReady =>
+      _state != PlayerState.initializing && _state != PlayerState.error;
 
-  void _optimizeQueue(_OpType incoming) {
-    if (_queue.isEmpty) return;
+  // ── 公开方法 ──
 
-    switch (incoming) {
-      case _OpType.play:
-      case _OpType.pause:
-        while (_queue.isNotEmpty &&
-            (_queue.last.type == _OpType.play ||
-                _queue.last.type == _OpType.pause)) {
-          _queue.removeLast();
-        }
-        break;
-      case _OpType.seek:
-        while (_queue.isNotEmpty && _queue.last.type == _OpType.seek) {
-          _queue.removeLast();
-        }
-        break;
-      case _OpType.setRate:
-        while (_queue.isNotEmpty && _queue.last.type == _OpType.setRate) {
-          _queue.removeLast();
-        }
-        break;
-      case _OpType.other:
-        break;
-    }
-  }
-
-  Future<void> _processQueue() async {
-    _processing = true;
-    notifyListeners();
-    while (_queue.isNotEmpty) {
-      final next = _queue.removeAt(0);
-      try {
-        await next.execute();
-      } catch (e) {
-        _queue.clear();
-        _hasError = true;
-        _errorMessage = e.toString();
-        break;
-      }
-    }
-    _processing = false;
-    notifyListeners();
-  }
-
-  // ── 公开方法（入队列） ──
-
-  /// 初始化：打开视频、seek 到保存位置、开始播放。
-  /// 这是唯一的异步入队方法，因为 open 必须等待完成后才能 seek/play。
-  void initialize(String url, {double? savedPositionSeconds}) {
-    _enqueue(_OpType.other, () =>
-      _initAsync(url, savedPositionSeconds: savedPositionSeconds),
-    );
-  }
-
-  Future<void> _initAsync(String url,
-      {double? savedPositionSeconds}) async {
-    try {
-      await _player.open(Media(url), play: false);
-
-      // 等待获取实际时长（5s 超时）
-      Duration? videoDuration;
-      try {
-        videoDuration = await _player.stream.duration
-            .firstWhere((d) => d > Duration.zero)
-            .timeout(const Duration(seconds: 5));
-      } catch (_) {
-        // 超时，从头播放
-      }
-
-      // 有保存进度则 seek
-      if (videoDuration != null &&
-          savedPositionSeconds != null &&
-          savedPositionSeconds > 0 &&
-          videoDuration.inSeconds > 0 &&
-          savedPositionSeconds / videoDuration.inSeconds < 0.9) {
-        await _player.seek(Duration(seconds: savedPositionSeconds.round()));
-      }
-
-      await _player.play();
-
-      // 设置 stream 监听
-      _setupStreamListeners();
-
-      _isReady = true;
-      notifyListeners();
-    } catch (e) {
-      _hasError = true;
-      _errorMessage = '视频加载失败：$e';
-      notifyListeners();
-    }
+  /// 初始化：打开视频 & 获取进度并行执行，恢复进度后自动播放
+  void initialize(String url, {Future<double?>? progressFuture}) {
+    debugPrint(
+        '$_tag initialize() url=${url.length > 80 ? '${url.substring(0, 80)}...' : url}');
+    _initAsync(url, progressFuture: progressFuture);
   }
 
   void play() {
-    if (!_isReady) return;
-    _enqueue(_OpType.play, () => _player.play());
-  }
-
-  void pause() {
-    if (!_isReady) return;
-    _enqueue(_OpType.pause, () => _player.pause());
-  }
-
-  void seek(Duration target) {
-    if (!_isReady) return;
-    _seekTarget = target;
-    _enqueue(_OpType.seek, () => _player.seek(target));
+    if (_state == PlayerState.error || _state == PlayerState.initializing) {
+      debugPrint('$_tag play() 忽略 (当前状态: $_state)');
+      return;
+    }
+    debugPrint('$_tag play()');
+    _player.play();
+    _state = PlayerState.playing;
     notifyListeners();
   }
 
-  void setRate(double rate) {
-    if (!_isReady) return;
-    _enqueue(_OpType.setRate, () => _player.setRate(rate));
+  void pause() {
+    if (_state == PlayerState.error || _state == PlayerState.initializing) {
+      debugPrint('$_tag pause() 忽略 (当前状态: $_state)');
+      return;
+    }
+    debugPrint('$_tag pause()');
+    _player.pause();
+    _state = PlayerState.paused;
+    notifyListeners();
   }
 
-  // ── 全屏（直接执行，不入队列） ──
+  void seek(Duration target) {
+    if (_state == PlayerState.error || _state == PlayerState.initializing) {
+      debugPrint('$_tag seek() 忽略 (当前状态: $_state)');
+      return;
+    }
+    debugPrint('$_tag seek() target=${target.inSeconds}s');
+    // 立即更新 position，UI 即时响应
+    _position = target;
+    _seekAsync(target);
+  }
+
+  void setRate(double rate) {
+    if (_state == PlayerState.error || _state == PlayerState.initializing) {
+      return;
+    }
+    debugPrint('$_tag setRate($rate)');
+    _player.setRate(rate);
+  }
+
+  // ── 全屏 ──
 
   void enterFullscreen() {
+    debugPrint('$_tag enterFullscreen()');
     _isFullscreen = true;
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
@@ -202,41 +135,128 @@ class VideoPlayerController extends ChangeNotifier {
   }
 
   void exitFullscreen() {
+    debugPrint('$_tag exitFullscreen()');
     _isFullscreen = false;
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     notifyListeners();
   }
 
-  // ── Stream 监听 ──
+  // ── 内部：异步初始化 ──
+
+  Future<void> _initAsync(String url,
+      {Future<double?>? progressFuture}) async {
+    try {
+      // 打开视频 & 获取进度并行执行
+      debugPrint('$_tag _initAsync 开始打开视频 & 获取进度（并行）...');
+      final results = await Future.wait([
+        _player.open(Media(url), play: false),
+        if (progressFuture != null) progressFuture,
+      ]);
+
+      final savedPositionSeconds =
+          progressFuture != null ? results.last as double? : null;
+      debugPrint('$_tag _initAsync 视频已打开, savedPos=$savedPositionSeconds');
+
+      // 先注册 stream 监听，确保后续 duration/position 事件不会丢失
+      _setupStreamListeners();
+
+      // 有保存进度则 seek 后播放
+      if (savedPositionSeconds != null && savedPositionSeconds > 0) {
+        debugPrint('$_tag _initAsync 恢复进度: ${savedPositionSeconds}s');
+        _state = PlayerState.buffering;
+        notifyListeners();
+
+        await _player.seek(Duration(seconds: savedPositionSeconds.round()));
+        debugPrint('$_tag _initAsync seek 完成，开始播放');
+
+        await _player.play();
+        _state = PlayerState.playing;
+        notifyListeners();
+      } else {
+        // 无进度，直接播放
+        debugPrint('$_tag _initAsync 无保存进度，直接播放');
+        await _player.play();
+        _state = PlayerState.playing;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('$_tag _initAsync 错误: $e');
+      _state = PlayerState.error;
+      _errorMessage = '视频加载失败：$e';
+      notifyListeners();
+    }
+  }
+
+  // ── 内部：异步 seek ──
+
+  Future<void> _seekAsync(Duration target) async {
+    // 如果正在 seek，只更新目标，不重复发起
+    if (_isSeeking) {
+      debugPrint('$_tag seek 排队 target=${target.inSeconds}s (替换上一个 pending)');
+      _pendingSeekTarget = target;
+      return;
+    }
+
+    // 记录 seek 前的播放状态（整个 seek 链只记一次）
+    _stateBeforeSeek = _state;
+    _isSeeking = true;
+    _state = PlayerState.buffering;
+    notifyListeners();
+
+    var current = target;
+    try {
+      while (true) {
+        _pendingSeekTarget = null;
+        debugPrint('$_tag seek 执行 target=${current.inSeconds}s');
+        await _player.seek(current);
+
+        // 检查是否有更新的 seek 目标
+        if (_pendingSeekTarget != null) {
+          debugPrint('$_tag seek 有新目标 ${_pendingSeekTarget!.inSeconds}s，继续');
+          current = _pendingSeekTarget!;
+          continue;
+        }
+        break;
+      }
+
+      // 恢复 seek 前的状态
+      final restoreTo = _stateBeforeSeek ?? PlayerState.playing;
+      debugPrint('$_tag seek 完成 pos=${current.inSeconds}s, 恢复=${restoreTo == PlayerState.playing ? "playing" : "paused"}');
+
+      if (restoreTo == PlayerState.playing) {
+        _player.play();
+        _state = PlayerState.playing;
+      } else {
+        _state = PlayerState.paused;
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('$_tag seek 错误: $e');
+      // 只有没有新 seek 排队时才报错
+      if (_pendingSeekTarget == null) {
+        _state = PlayerState.error;
+        _errorMessage = 'Seek 失败：$e';
+        notifyListeners();
+      }
+    } finally {
+      _isSeeking = false;
+      _stateBeforeSeek = null;
+    }
+  }
+
+  // ── 内部：stream 监听 ──
 
   void _setupStreamListeners() {
     _subs.addAll([
       _player.stream.position.listen((v) {
-        if (_seekTarget != null) {
-          // seek 过程中：position 到达目标附近后清除 seekTarget，恢复正常同步
-          final diff = (v - _seekTarget!).inMilliseconds.abs();
-          if (diff < 500) {
-            _seekTarget = null;
-            _position = v;
-            notifyListeners();
-          }
-          // 未到达目标，不更新 position
-          return;
+        if (_state != PlayerState.buffering) {
+          _position = v;
+          notifyListeners();
         }
-        _position = v;
-        notifyListeners();
       }),
       _player.stream.duration.listen((v) {
         _duration = v;
-        notifyListeners();
-      }),
-      _player.stream.playing.listen((v) {
-        _isPlaying = v;
-        notifyListeners();
-      }),
-      _player.stream.buffering.listen((v) {
-        _isBuffering = v;
         notifyListeners();
       }),
     ]);
@@ -244,14 +264,16 @@ class VideoPlayerController extends ChangeNotifier {
 
   // ── 生命周期 ──
 
-  /// 获取当前 position（秒），用于退出时上报进度。
+  /// 当前 position（秒），用于退出时上报进度
   double get positionSeconds => _player.state.position.inSeconds.toDouble();
 
-  /// 获取当前 duration（秒）。
+  /// 当前 duration（秒）
   double get durationSeconds => _player.state.duration.inSeconds.toDouble();
 
   @override
   void dispose() {
+    debugPrint(
+        '$_tag dispose() pos=${_player.state.position.inSeconds}s, dur=${_player.state.duration.inSeconds}s, fullscreen=$_isFullscreen');
     for (final s in _subs) {
       s.cancel();
     }

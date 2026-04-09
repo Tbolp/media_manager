@@ -13,9 +13,6 @@ class AppConstants {
   // SecureStorage Keys
   static const String keyAuthToken = 'auth_token';
 
-  // 进度阈值：达到此比例时标记为已看完
-  static const double watchedThreshold = 0.9;
-
   // 刷新轮询间隔
   static const Duration refreshPollInterval = Duration(seconds: 5);
 
