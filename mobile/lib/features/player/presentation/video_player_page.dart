@@ -12,6 +12,7 @@ import '../../../features/settings/providers/settings_provider.dart';
 import '../../../shared/utils/duration_format.dart';
 import '../../../shared/utils/url_builder.dart';
 import 'providers/player_provider.dart';
+import '../data/progress_api.dart';
 import 'video_player_controller.dart';
 import 'widgets/video_control_bar.dart';
 import 'widgets/video_player_widget.dart';
@@ -34,6 +35,7 @@ class VideoPlayerPage extends ConsumerStatefulWidget {
 
 class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
   late final VideoPlayerController _controller;
+  late final ProgressApi _progressApi;
 
   // 手势相关
   bool _showControls = true;
@@ -60,9 +62,11 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
             '';
     final url = UrlBuilder.videoUrl(baseUrl, widget.fileId, token);
 
+    // 缓存 progressApi 引用，dispose 时 ref 已不可用
+    _progressApi = ref.read(progressApiProvider);
+
     // 获取保存的进度
-    final api = ref.read(progressApiProvider);
-    api.getProgress(widget.fileId).then((savedPosition) {
+    _progressApi.getProgress(widget.fileId).then((savedPosition) {
       _controller.initialize(url, savedPositionSeconds: savedPosition);
     }).catchError((_) {
       _controller.initialize(url);
@@ -85,8 +89,7 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     _controller.dispose();
     _hideControlsTimer?.cancel();
     if (duration > 0) {
-      ref
-          .read(progressApiProvider)
+      _progressApi
           .reportProgress(widget.fileId, position, duration)
           .catchError((_) {});
     }

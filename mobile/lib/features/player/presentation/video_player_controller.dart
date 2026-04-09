@@ -16,7 +16,7 @@ enum _OpType { play, pause, seek, setRate, other }
 class _QueuedOp {
   const _QueuedOp(this.type, this.execute);
   final _OpType type;
-  final void Function() execute;
+  final Future<void> Function() execute;
 }
 
 // ──────────────────────────────────────────────
@@ -41,7 +41,7 @@ class VideoPlayerController extends ChangeNotifier {
   bool get isReady => _isReady;
 
   bool _isBuffering = false;
-  double? _seekTarget;
+  Duration? _seekTarget;
   bool get isLoading => _processing || _seekTarget != null || _isBuffering;
 
   bool _hasError = false;
@@ -57,7 +57,7 @@ class VideoPlayerController extends ChangeNotifier {
   bool get isFullscreen => _isFullscreen;
 
   Duration _position = Duration.zero;
-  Duration get position => _position;
+  Duration get position => _seekTarget ?? _position;
 
   Duration _duration = Duration.zero;
   Duration get duration => _duration;
@@ -67,7 +67,7 @@ class VideoPlayerController extends ChangeNotifier {
   final _queue = <_QueuedOp>[];
   bool _processing = false;
 
-  void _enqueue(_OpType type, void Function() task) {
+  void _enqueue(_OpType type, Future<void> Function() task) {
     _optimizeQueue(type);
     _queue.add(_QueuedOp(type, task));
     if (_processing) return;
@@ -101,13 +101,13 @@ class VideoPlayerController extends ChangeNotifier {
     }
   }
 
-  void _processQueue() {
+  Future<void> _processQueue() async {
     _processing = true;
     notifyListeners();
     while (_queue.isNotEmpty) {
       final next = _queue.removeAt(0);
       try {
-        next.execute();
+        await next.execute();
       } catch (e) {
         _queue.clear();
         _hasError = true;
@@ -124,10 +124,9 @@ class VideoPlayerController extends ChangeNotifier {
   /// 初始化：打开视频、seek 到保存位置、开始播放。
   /// 这是唯一的异步入队方法，因为 open 必须等待完成后才能 seek/play。
   void initialize(String url, {double? savedPositionSeconds}) {
-    _enqueue(_OpType.other, () {
-      // 异步初始化流程，在内部处理
-      _initAsync(url, savedPositionSeconds: savedPositionSeconds);
-    });
+    _enqueue(_OpType.other, () =>
+      _initAsync(url, savedPositionSeconds: savedPositionSeconds),
+    );
   }
 
   Future<void> _initAsync(String url,
@@ -169,23 +168,24 @@ class VideoPlayerController extends ChangeNotifier {
   }
 
   void play() {
+    if (!_isReady) return;
     _enqueue(_OpType.play, () => _player.play());
   }
 
   void pause() {
+    if (!_isReady) return;
     _enqueue(_OpType.pause, () => _player.pause());
   }
 
   void seek(Duration target) {
-    _seekTarget =
-        _duration.inMilliseconds > 0
-            ? target.inMilliseconds / _duration.inMilliseconds
-            : null;
+    if (!_isReady) return;
+    _seekTarget = target;
     _enqueue(_OpType.seek, () => _player.seek(target));
     notifyListeners();
   }
 
   void setRate(double rate) {
+    if (!_isReady) return;
     _enqueue(_OpType.setRate, () => _player.setRate(rate));
   }
 
@@ -213,14 +213,15 @@ class VideoPlayerController extends ChangeNotifier {
   void _setupStreamListeners() {
     _subs.addAll([
       _player.stream.position.listen((v) {
-        // seek 中：等 position 从左到右超过目标
-        if (_seekTarget != null && _duration.inMilliseconds > 0) {
-          final ratio = v.inMilliseconds / _duration.inMilliseconds;
-          if (ratio >= _seekTarget!) {
+        if (_seekTarget != null) {
+          // seek 过程中：position 到达目标附近后清除 seekTarget，恢复正常同步
+          final diff = (v - _seekTarget!).inMilliseconds.abs();
+          if (diff < 500) {
             _seekTarget = null;
             _position = v;
             notifyListeners();
           }
+          // 未到达目标，不更新 position
           return;
         }
         _position = v;
