@@ -8,16 +8,13 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../features/settings/providers/settings_provider.dart';
-import '../../../core/storage/prefs_storage.dart';
 import '../../../shared/utils/url_builder.dart';
-import '../../../shared/widgets/skeleton_list.dart';
 import '../../../shared/widgets/skeleton_grid.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../domain/file_model.dart';
 import 'providers/directory_provider.dart';
 import 'providers/library_provider.dart';
 import 'widgets/file_grid_tile.dart';
-import 'widgets/file_list_tile.dart';
 import 'widgets/refresh_banner.dart';
 import '../../player/presentation/image_preview_overlay.dart';
 
@@ -58,9 +55,6 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
   Widget build(BuildContext context) {
     final currentPath = ref.watch(
       currentPathProvider(widget.libraryId),
-    );
-    final viewMode = ref.watch(
-      settingsNotifierProvider.select((s) => s.libraryViewMode),
     );
     final baseUrl =
         ref.watch(settingsNotifierProvider.select((s) => s.serverUrl));
@@ -137,22 +131,6 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
                 });
               },
             ),
-            if (!_isSearching)
-              IconButton(
-                icon: Icon(
-                  viewMode == ViewMode.grid
-                      ? Icons.view_list_outlined
-                      : Icons.grid_view_outlined,
-                ),
-                onPressed: () {
-                  final newMode = viewMode == ViewMode.grid
-                      ? ViewMode.list
-                      : ViewMode.grid;
-                  ref
-                      .read(settingsNotifierProvider.notifier)
-                      .saveViewMode(newMode);
-                },
-              ),
           ],
         ),
         body: Column(
@@ -168,14 +146,12 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
                       keyword: _searchKeyword,
                       baseUrl: baseUrl,
                       token: token,
-                      viewMode: viewMode,
                     )
                   : _DirectoryView(
                       libraryId: widget.libraryId,
                       path: currentPath,
                       baseUrl: baseUrl,
                       token: token,
-                      viewMode: viewMode,
                     ),
             ),
           ],
@@ -245,14 +221,12 @@ class _DirectoryView extends ConsumerWidget {
     required this.path,
     required this.baseUrl,
     required this.token,
-    required this.viewMode,
   });
 
   final String libraryId;
   final String path;
   final String baseUrl;
   final String token;
-  final ViewMode viewMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -260,9 +234,7 @@ class _DirectoryView extends ConsumerWidget {
         ref.watch(directoryContentProvider(libraryId, path));
 
     return contentAsync.when(
-      loading: () => viewMode == ViewMode.grid
-          ? const SkeletonGrid()
-          : const SkeletonList(),
+      loading: () => const SkeletonGrid(),
       error: (err, _) => Center(child: Text('加载失败：$err')),
       data: (content) {
         final dirs = content.dirs;
@@ -289,9 +261,7 @@ class _DirectoryView extends ConsumerWidget {
             }
             return false;
           },
-          child: viewMode == ViewMode.grid
-              ? _buildGrid(context, dirs, files, hasMore, notifier, ref)
-              : _buildList(context, dirs, files, hasMore, notifier, ref),
+          child: _buildGrid(context, dirs, files, hasMore, notifier, ref),
         );
       },
     );
@@ -353,62 +323,6 @@ class _DirectoryView extends ConsumerWidget {
     );
   }
 
-  Widget _buildList(
-    BuildContext context,
-    List<String> dirs,
-    List<FileModel> files,
-    bool hasMore,
-    CurrentPath notifier,
-    WidgetRef ref,
-  ) {
-    final allItems = <_ListItem>[
-      ...dirs.map(
-        (d) => _ListItem.dir(
-          name: d,
-          onTap: () => notifier.navigate(
-            path.isEmpty ? d : '$path/$d',
-          ),
-        ),
-      ),
-      ...files.map(
-        (f) => _ListItem.file(
-          file: f,
-          onTap: () =>
-              _onFileTap(context, f, files, files.indexOf(f)),
-        ),
-      ),
-    ];
-
-    return RefreshIndicator(
-      onRefresh: () async =>
-          ref.invalidate(directoryContentProvider(libraryId, path)),
-      child: ListView.builder(
-        itemCount: allItems.length + (hasMore ? 1 : 0),
-        itemBuilder: (_, i) {
-          if (i >= allItems.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            );
-          }
-          final item = allItems[i];
-          if (item.isDir) {
-            return _DirTile(name: item.name!, onTap: item.onTap);
-          }
-          final file = item.file!;
-          return FileListTile(
-            file: file,
-            thumbnailUrl:
-                UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
-            onTap: item.onTap,
-          );
-        },
-      ),
-    );
-  }
-
   void _onFileTap(
     BuildContext context,
     FileModel file,
@@ -444,14 +358,12 @@ class _SearchResults extends ConsumerWidget {
     required this.keyword,
     required this.baseUrl,
     required this.token,
-    required this.viewMode,
   });
 
   final String libraryId;
   final String keyword;
   final String baseUrl;
   final String token;
-  final ViewMode viewMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -459,7 +371,7 @@ class _SearchResults extends ConsumerWidget {
         ref.watch(searchFilesProvider(libraryId, keyword));
 
     return resultsAsync.when(
-      loading: () => const SkeletonList(),
+      loading: () => const SkeletonGrid(),
       error: (err, _) => Center(child: Text('搜索失败：$err')),
       data: (files) {
         if (files.isEmpty) {
@@ -468,55 +380,54 @@ class _SearchResults extends ConsumerWidget {
             message: '未找到匹配的文件',
           );
         }
-        return ListView.builder(
-          itemCount: files.length,
-          itemBuilder: (_, i) {
-            final file = files[i];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                FileListTile(
-                  file: file,
-                  thumbnailUrl:
-                      UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
-                  onTap: () {
-                    if (file.isVideo) {
-                      context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
-                    } else if (file.isImage) {
-                      final images =
-                          files.where((f) => f.isImage).toList();
-                      final idx =
-                          images.indexWhere((f) => f.id == file.id);
-                      Navigator.of(context).push(
-                        PageRouteBuilder(
-                          opaque: false,
-                          pageBuilder: (_, __, ___) =>
-                              ImagePreviewOverlay(
-                            images: images,
-                            initialIndex: idx < 0 ? 0 : idx,
-                            baseUrl: baseUrl,
-                            token: token,
-                          ),
-                        ),
-                      );
-                    }
+        final totalCount = files.length;
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(8),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.85,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) {
+                    final file = files[i];
+                    return FileGridTile(
+                      file: file,
+                      thumbnailUrl:
+                          UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
+                      onTap: () {
+                        if (file.isVideo) {
+                          context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
+                        } else if (file.isImage) {
+                          final images =
+                              files.where((f) => f.isImage).toList();
+                          final idx =
+                              images.indexWhere((f) => f.id == file.id);
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              opaque: false,
+                              pageBuilder: (_, __, ___) =>
+                                  ImagePreviewOverlay(
+                                images: images,
+                                initialIndex: idx < 0 ? 0 : idx,
+                                baseUrl: baseUrl,
+                                token: token,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    );
                   },
+                  childCount: totalCount,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 104, right: 16),
-                  child: Text(
-                    file.relativePath,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Divider(height: 1),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         );
       },
     );
@@ -571,55 +482,4 @@ class _DirGridTile extends StatelessWidget {
       ),
     );
   }
-}
-
-// ──────────────────────────────────────────────
-// 目录 List Tile
-// ──────────────────────────────────────────────
-class _DirTile extends StatelessWidget {
-  const _DirTile({required this.name, required this.onTap});
-
-  final String name;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 80,
-          height: 52,
-          color: Colors.grey.shade200,
-          child: Icon(
-            Icons.folder_outlined,
-            color: Colors.grey.shade600,
-            size: 28,
-          ),
-        ),
-      ),
-      title: Text(name, overflow: TextOverflow.ellipsis),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
-// 列表项联合类
-// ──────────────────────────────────────────────
-class _ListItem {
-  _ListItem.dir({required this.name, required this.onTap})
-      : isDir = true,
-        file = null;
-
-  _ListItem.file({required this.file, required this.onTap})
-      : isDir = false,
-        name = null;
-
-  final bool isDir;
-  final String? name;
-  final FileModel? file;
-  final VoidCallback onTap;
 }

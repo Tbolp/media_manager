@@ -1,5 +1,5 @@
 // lib/core/storage/prefs_storage.dart
-// SharedPreferences 封装（服务器地址、视图偏好）
+// SharedPreferences 封装（服务器地址）
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -7,8 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants.dart';
 
 part 'prefs_storage.g.dart';
-
-enum ViewMode { list, grid }
 
 class PrefsStorageService {
   PrefsStorageService(this._prefs);
@@ -19,14 +17,6 @@ class PrefsStorageService {
 
   Future<void> setServerUrl(String url) =>
       _prefs.setString(AppConstants.keyServerUrl, url);
-
-  ViewMode getViewMode() {
-    final raw = _prefs.getString(AppConstants.keyLibraryViewMode);
-    return raw == 'list' ? ViewMode.list : ViewMode.grid;
-  }
-
-  Future<void> setViewMode(ViewMode mode) =>
-      _prefs.setString(AppConstants.keyLibraryViewMode, mode.name);
 }
 
 @riverpod

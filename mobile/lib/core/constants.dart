@@ -8,7 +8,6 @@ class AppConstants {
 
   // SharedPreferences Keys
   static const String keyServerUrl = 'server_url';
-  static const String keyLibraryViewMode = 'library_view_mode';
 
   // SecureStorage Keys
   static const String keyAuthToken = 'auth_token';
