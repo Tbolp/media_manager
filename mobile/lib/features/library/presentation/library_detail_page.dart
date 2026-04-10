@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants.dart';
+import '../../../core/router/routes.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../features/cast/presentation/providers/cast_provider.dart';
 import '../../../features/settings/providers/settings_provider.dart';
 import '../../../shared/utils/url_builder.dart';
 import '../../../shared/widgets/skeleton_grid.dart';
@@ -303,7 +305,7 @@ class _DirectoryView extends ConsumerWidget {
                   thumbnailUrl:
                       UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
                   onTap: () =>
-                      _onFileTap(context, file, files, i - dirs.length),
+                      _onFileTap(context, ref, file, files, i - dirs.length),
                 );
               },
               childCount: totalCount,
@@ -325,12 +327,25 @@ class _DirectoryView extends ConsumerWidget {
 
   void _onFileTap(
     BuildContext context,
+    WidgetRef ref,
     FileModel file,
     List<FileModel> files,
     int index,
   ) {
     if (file.isVideo) {
-      context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
+      final castState = ref.read(castNotifierProvider);
+      if (castState.isConnected) {
+        // 已连接投屏设备 → 投屏播放
+        final url = UrlBuilder.videoUrl(baseUrl, file.id, token);
+        ref.read(castNotifierProvider.notifier).castVideo(
+              url: url,
+              title: file.filename,
+            );
+        context.push(kRouteCastControl);
+      } else {
+        // 未连接 → 本地播放
+        context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
+      }
     } else if (file.isImage) {
       final images = files.where((f) => f.isImage).toList();
       final imageIndex = images.indexWhere((f) => f.id == file.id);
@@ -401,7 +416,17 @@ class _SearchResults extends ConsumerWidget {
                           UrlBuilder.thumbnailUrl(baseUrl, file.id, token),
                       onTap: () {
                         if (file.isVideo) {
-                          context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
+                          final castState = ref.read(castNotifierProvider);
+                          if (castState.isConnected) {
+                            final url = UrlBuilder.videoUrl(baseUrl, file.id, token);
+                            ref.read(castNotifierProvider.notifier).castVideo(
+                                  url: url,
+                                  title: file.filename,
+                                );
+                            context.push(kRouteCastControl);
+                          } else {
+                            context.push('/library/$libraryId/play/${file.id}?title=${Uri.encodeComponent(file.filename)}');
+                          }
                         } else if (file.isImage) {
                           final images =
                               files.where((f) => f.isImage).toList();

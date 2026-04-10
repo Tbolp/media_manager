@@ -45,6 +45,9 @@ dependencies:
   # 音量控制
   volume_controller: ^2.0.7
 
+  # DLNA 投屏（XML 解析）
+  xml: ^6.5.0
+
   cupertino_icons: ^1.0.6
 
 dev_dependencies:

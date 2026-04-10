@@ -6,3 +6,4 @@ const kRouteLogin = '/login';
 const kRouteHome = '/';
 const kRouteLibrary = '/library/:libraryId';
 const kRoutePlayer = '/library/:libraryId/play/:fileId';
+const kRouteCastControl = '/cast-control';

@@ -9,6 +9,8 @@ import '../../../shared/utils/url_builder.dart';
 import '../../../shared/widgets/skeleton_grid.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../auth/presentation/providers/auth_provider.dart';
+import '../../cast/presentation/providers/cast_provider.dart';
+import '../../cast/presentation/widgets/device_picker_sheet.dart';
 import '../../settings/providers/settings_provider.dart';
 import '../data/library_repository.dart';
 import 'providers/library_provider.dart';
@@ -32,6 +34,27 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('媒体库'),
         actions: [
+          // 投屏按钮
+          Builder(builder: (context) {
+            final castState = ref.watch(castNotifierProvider);
+            return IconButton(
+              icon: Icon(
+                castState.isConnected
+                    ? Icons.cast_connected
+                    : Icons.cast,
+                color: castState.isConnected
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+              ),
+              onPressed: () {
+                if (castState.isCasting) {
+                  context.push(kRouteCastControl);
+                } else {
+                  showDevicePicker(context);
+                }
+              },
+            );
+          }),
           PopupMenuButton<String>(
             icon: CircleAvatar(
               radius: 16,

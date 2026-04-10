@@ -137,7 +137,10 @@ class VideoPlayerController extends ChangeNotifier {
   void exitFullscreen() {
     debugPrint('$_tag exitFullscreen()');
     _isFullscreen = false;
-    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     notifyListeners();
   }
@@ -279,7 +282,10 @@ class VideoPlayerController extends ChangeNotifier {
     }
     _player.dispose();
     if (_isFullscreen) {
-      SystemChrome.setPreferredOrientations(DeviceOrientation.values);
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
     super.dispose();

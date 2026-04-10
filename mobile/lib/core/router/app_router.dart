@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/server_page.dart';
+import '../../features/cast/presentation/cast_control_page.dart';
 import '../../features/library/presentation/home_page.dart';
 import '../../features/library/presentation/library_detail_page.dart';
 import '../../features/player/presentation/video_player_page.dart';
@@ -85,6 +86,10 @@ GoRouter appRouter(AppRouterRef ref) {
           fileId: state.pathParameters['fileId']!,
           title: state.uri.queryParameters['title'] ?? '',
         ),
+      ),
+      GoRoute(
+        path: kRouteCastControl,
+        builder: (_, __) => const CastControlPage(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

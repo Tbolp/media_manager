@@ -4,10 +4,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import '../../../core/constants.dart';
+import '../../../core/router/routes.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
+import '../../../features/cast/presentation/providers/cast_provider.dart';
+import '../../../features/cast/presentation/widgets/device_picker_sheet.dart';
 import '../../../features/settings/providers/settings_provider.dart';
 import '../../../shared/utils/duration_format.dart';
 import '../../../shared/utils/url_builder.dart';
@@ -141,6 +145,34 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     _initialBrightness = null;
     _initialVolume = null;
     setState(() => _dragOverlayText = null);
+  }
+
+  // ──── 投屏 ────
+
+  Future<void> _onCastPressed(BuildContext context) async {
+    final device = await showDevicePicker(context);
+    if (device == null || !mounted) return;
+
+    // 暂停本地播放
+    _controller.pause();
+
+    // 投屏
+    final baseUrl =
+        ref.read(settingsNotifierProvider.select((s) => s.serverUrl));
+    final token =
+        ref.read(authNotifierProvider.select((s) => s.valueOrNull?.token)) ??
+            '';
+    final url = UrlBuilder.videoUrl(baseUrl, widget.fileId, token);
+
+    ref.read(castNotifierProvider.notifier).castVideo(
+          url: url,
+          title: widget.title,
+          startPositionSeconds: _controller.position.inSeconds,
+        );
+
+    if (mounted) {
+      context.push(kRouteCastControl);
+    }
   }
 
   // ──── 构建 ────
@@ -291,27 +323,27 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
 
           // 控制栏
           if (_showControls) ...[
-            // 顶部（全屏时显示返回按钮和标题）
-            if (_controller.isFullscreen)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.black54, Colors.transparent],
-                    ),
+            // 顶部栏
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.black54, Colors.transparent],
                   ),
-                  padding: EdgeInsets.only(
-                    top: viewPadding.top,
-                    left: 4,
-                    right: 4,
-                  ),
-                  child: Row(
-                    children: [
+                ),
+                padding: EdgeInsets.only(
+                  top: _controller.isFullscreen ? viewPadding.top : 4,
+                  left: 4,
+                  right: 4,
+                ),
+                child: Row(
+                  children: [
+                    if (_controller.isFullscreen) ...[
                       IconButton(
                         icon: const Icon(Icons.arrow_back,
                             color: Colors.white),
@@ -325,10 +357,22 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                    ] else ...[
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.cast,
+                            color: !_controller.isLoading
+                                ? Colors.white
+                                : Colors.white38),
+                        onPressed: !_controller.isLoading
+                            ? () => _onCastPressed(context)
+                            : null,
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
+            ),
 
             // 底部控制栏
             Positioned(
