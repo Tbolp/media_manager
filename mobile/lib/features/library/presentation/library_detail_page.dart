@@ -445,36 +445,40 @@ class _DirGridTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusableCard(
+    return GestureDetector(
       onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: Container(
-              color: Colors.grey.shade200,
-              child: Center(
-                child: Icon(
-                  Icons.folder_outlined,
-                  color: Colors.grey.shade600,
-                  size: 40,
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                color: Colors.grey.shade200,
+                child: Center(
+                  child: Icon(
+                    Icons.folder_outlined,
+                    color: Colors.grey.shade600,
+                    size: 40,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: SizedBox(
-              height: 32,
-              child: Text(
-                name,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
-                style: Theme.of(context).textTheme.bodySmall,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              child: SizedBox(
+                height: 32,
+                child: Text(
+                  name,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

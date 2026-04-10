@@ -74,8 +74,6 @@ class _ServerPageState extends ConsumerState<ServerPage> {
                   controller: _urlController,
                   keyboardType: TextInputType.url,
                   autocorrect: false,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _save(),
                   decoration: const InputDecoration(
                     labelText: '服务器地址',
                     hintText: 'http://192.168.1.100:8080',

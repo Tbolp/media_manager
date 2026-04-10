@@ -4,7 +4,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../domain/library_model.dart';
-import 'file_grid_tile.dart';
 
 class LibraryCard extends StatefulWidget {
   const LibraryCard({
@@ -38,9 +37,12 @@ class _LibraryCardState extends State<LibraryCard> {
 
   @override
   Widget build(BuildContext context) {
-    return FocusableCard(
+    return GestureDetector(
       onTap: widget.onTap,
-      child: Column(
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        margin: EdgeInsets.zero,
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
@@ -60,27 +62,29 @@ class _LibraryCardState extends State<LibraryCard> {
                   Positioned(
                     right: 4,
                     bottom: 4,
-                    child: IconButton(
-                      onPressed: _triggerRefresh,
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black38,
+                    child: GestureDetector(
+                      onTap: _triggerRefresh,
+                      child: Container(
                         padding: const EdgeInsets.all(4),
-                        minimumSize: const Size(28, 28),
-                      ),
-                      icon: _refreshLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                        decoration: BoxDecoration(
+                          color: Colors.black38,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: _refreshLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.refresh_outlined,
+                                size: 16,
                                 color: Colors.white,
                               ),
-                            )
-                          : const Icon(
-                              Icons.refresh_outlined,
-                              size: 16,
-                              color: Colors.white,
-                            ),
+                      ),
                     ),
                   ),
                 ],
@@ -100,7 +104,8 @@ class _LibraryCardState extends State<LibraryCard> {
             ),
           ],
         ),
-      );
+      ),
+    );
   }
 }
 

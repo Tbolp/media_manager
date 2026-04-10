@@ -3,7 +3,6 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
 import '../../../features/library/domain/file_model.dart';
 import '../../../shared/utils/url_builder.dart';
@@ -30,7 +29,6 @@ class _ImagePreviewOverlayState extends State<ImagePreviewOverlay> {
   late final PageController _pageController;
   late int _currentIndex;
   bool _showInfo = true;
-  final _focusNode = FocusNode();
 
   @override
   void initState() {
@@ -42,42 +40,7 @@ class _ImagePreviewOverlayState extends State<ImagePreviewOverlay> {
   @override
   void dispose() {
     _pageController.dispose();
-    _focusNode.dispose();
     super.dispose();
-  }
-
-  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
-
-    final key = event.logicalKey;
-
-    // 左方向键 → 上一张
-    if (key == LogicalKeyboardKey.arrowLeft && _currentIndex > 0) {
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      return KeyEventResult.handled;
-    }
-
-    // 右方向键 → 下一张
-    if (key == LogicalKeyboardKey.arrowRight &&
-        _currentIndex < widget.images.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-      return KeyEventResult.handled;
-    }
-
-    // 返回键 → 关闭预览
-    if (key == LogicalKeyboardKey.escape ||
-        key == LogicalKeyboardKey.goBack) {
-      Navigator.of(context).pop();
-      return KeyEventResult.handled;
-    }
-
-    return KeyEventResult.ignored;
   }
 
   @override
@@ -86,11 +49,7 @@ class _ImagePreviewOverlayState extends State<ImagePreviewOverlay> {
         ? widget.images[_currentIndex]
         : null;
 
-    return Focus(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _onKeyEvent,
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
         onTap: () => setState(() => _showInfo = !_showInfo),
@@ -190,7 +149,6 @@ class _ImagePreviewOverlayState extends State<ImagePreviewOverlay> {
               ),
           ],
         ),
-      ),
       ),
     );
   }

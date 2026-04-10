@@ -42,17 +42,17 @@ class _VideoControlBarState extends State<VideoControlBar> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // 播放/暂停
-            IconButton(
-              icon: Icon(
-                c.isPlaying ? Icons.pause : Icons.play_arrow,
-                color: loading ? Colors.white38 : Colors.white,
-              ),
-              iconSize: 28,
-              onPressed: loading
+            GestureDetector(
+              onTap: loading
                   ? null
                   : () {
                       c.isPlaying ? c.pause() : c.play();
                     },
+              child: Icon(
+                c.isPlaying ? Icons.pause : Icons.play_arrow,
+                color: loading ? Colors.white38 : Colors.white,
+                size: 28,
+              ),
             ),
             // 进度条
             Expanded(
@@ -96,15 +96,15 @@ class _VideoControlBarState extends State<VideoControlBar> {
             ),
             const SizedBox(width: 4),
             // 全屏
-            IconButton(
-              icon: Icon(
-                c.isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                color: Colors.white,
-              ),
-              iconSize: 26,
-              onPressed: () {
+            GestureDetector(
+              onTap: () {
                 c.isFullscreen ? c.exitFullscreen() : c.enterFullscreen();
               },
+              child: Icon(
+                c.isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                color: Colors.white,
+                size: 26,
+              ),
             ),
           ],
         );
