@@ -25,6 +25,18 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+subprojects { subproject ->
+    // media_kit_libs_android_video sets compileSdkVersion 36, which AGP 7.3 cannot handle.
+    if (subproject.name == 'media_kit_libs_android_video') {
+        subproject.afterEvaluate {
+            def androidExt = subproject.extensions.findByName('android')
+            if (androidExt != null && androidExt.hasProperty('compileSdkVersion')) {
+                androidExt.compileSdkVersion 34
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

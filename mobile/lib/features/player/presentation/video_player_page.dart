@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
@@ -49,6 +50,9 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
   bool? _isDraggingHorizontal;
   String? _dragOverlayText;
 
+  // D-pad / 键盘焦点
+  final _focusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -87,6 +91,7 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     final duration = _controller.durationSeconds;
     _controller.dispose();
     _hideControlsTimer?.cancel();
+    _focusNode.dispose();
     if (duration > 0) {
       _progressApi
           .reportProgress(widget.fileId, position, duration)
@@ -105,6 +110,50 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
   void _toggleControls() {
     setState(() => _showControls = !_showControls);
     if (_showControls) _scheduleHideControls();
+  }
+
+  // ──── D-pad / 键盘处理 ────
+
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+
+    // 确认键 → 播放/暂停
+    if (key == LogicalKeyboardKey.select ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.space) {
+      if (_controller.isPlaying) {
+        _controller.pause();
+      } else {
+        _controller.play();
+      }
+      _showControlsAndScheduleHide();
+      return KeyEventResult.handled;
+    }
+
+    // 左方向键 → 快退
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      _onDoubleTapLeft();
+      _showControlsAndScheduleHide();
+      return KeyEventResult.handled;
+    }
+
+    // 右方向键 → 快进
+    if (key == LogicalKeyboardKey.arrowRight) {
+      _onDoubleTapRight();
+      _showControlsAndScheduleHide();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _showControlsAndScheduleHide() {
+    setState(() => _showControls = true);
+    _scheduleHideControls();
   }
 
   // ──── 手势 ────
@@ -191,7 +240,11 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
     final size = MediaQuery.of(context).size;
     final viewPadding = MediaQuery.of(context).viewPadding;
 
-    return GestureDetector(
+    return Focus(
+      focusNode: _focusNode,
+      autofocus: true,
+      onKeyEvent: _onKeyEvent,
+      child: GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _toggleControls,
       onDoubleTapDown: (details) {
@@ -358,6 +411,7 @@ class _VideoPlayerPageState extends ConsumerState<VideoPlayerPage> {
             ),
           ],
         ],
+      ),
       ),
     );
   }
