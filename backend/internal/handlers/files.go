@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -66,75 +65,70 @@ func handleDirectoryBrowse(c *gin.Context, libraryID, userID, pathPrefix string,
 	// Normalize path prefix
 	pathPrefix = strings.TrimSuffix(pathPrefix, "/")
 
-	// Build SQL query for files under this path prefix
-	var allFiles []fileRow
-	var err error
+	// --- 1. Query distinct direct sub-directory names ---
+	var dirRows []struct {
+		DirName string `db:"dir_name"`
+	}
 
 	if pathPrefix == "" {
-		err = database.AppDB.Select(&allFiles,
-			"SELECT id, filename, relative_path, file_type, duration, size FROM media_files WHERE library_id = ?",
+		// Root level: extract first segment from parent_dir of all files that have a parent_dir
+		database.AppDB.Select(&dirRows,
+			`SELECT DISTINCT
+				CASE WHEN INSTR(parent_dir, '/') = 0
+					THEN parent_dir
+					ELSE SUBSTR(parent_dir, 1, INSTR(parent_dir, '/') - 1)
+				END AS dir_name
+			FROM media_files
+			WHERE library_id = ? AND parent_dir != ''
+			ORDER BY dir_name`,
 			libraryID)
 	} else {
+		// Sub-directory: find dirs whose parent_dir starts with pathPrefix/
+		// and extract the next segment after pathPrefix/
 		likePattern := pathPrefix + "/%"
-		err = database.AppDB.Select(&allFiles,
-			"SELECT id, filename, relative_path, file_type, duration, size FROM media_files WHERE library_id = ? AND relative_path LIKE ?",
-			libraryID, likePattern)
+		startPos := len(pathPrefix) + 2 // 1-indexed, position after "prefix/"
+		database.AppDB.Select(&dirRows,
+			`SELECT DISTINCT
+				CASE WHEN INSTR(SUBSTR(parent_dir, ?), '/') = 0
+					THEN SUBSTR(parent_dir, ?)
+					ELSE SUBSTR(parent_dir, ?, INSTR(SUBSTR(parent_dir, ?), '/') - 1)
+				END AS dir_name
+			FROM media_files
+			WHERE library_id = ? AND parent_dir LIKE ?
+			ORDER BY dir_name`,
+			startPos, startPos, startPos, startPos, libraryID, likePattern)
 	}
-	if err != nil {
+
+	dirList := make([]string, 0, len(dirRows))
+	for _, d := range dirRows {
+		if d.DirName != "" {
+			dirList = append(dirList, d.DirName)
+		}
+	}
+
+	// --- 2. Count total direct files ---
+	var total int
+	if err := database.AppDB.Get(&total,
+		"SELECT COUNT(*) FROM media_files WHERE library_id = ? AND parent_dir = ?",
+		libraryID, pathPrefix); err != nil {
 		core.RespondInternalError(c)
 		return
 	}
 
-	// Separate into dirs and direct files
-	dirs := make(map[string]bool)
-	var directFiles []fileRow
-
-	prefixLen := 0
-	if pathPrefix != "" {
-		prefixLen = len(pathPrefix) + 1 // +1 for the trailing slash
-	}
-
-	for _, f := range allFiles {
-		remainder := f.RelativePath
-		if prefixLen > 0 {
-			if len(f.RelativePath) <= prefixLen {
-				continue
-			}
-			remainder = f.RelativePath[prefixLen:]
-		}
-
-		slashIdx := strings.Index(remainder, "/")
-		if slashIdx == -1 {
-			// Direct file at this level
-			directFiles = append(directFiles, f)
-		} else {
-			// It's in a subdirectory
-			dirName := remainder[:slashIdx]
-			dirs[dirName] = true
-		}
-	}
-
-	// Sort dirs
-	dirList := make([]string, 0, len(dirs))
-	for d := range dirs {
-		dirList = append(dirList, d)
-	}
-	sort.Strings(dirList)
-
-	// Paginate direct files
-	total := len(directFiles)
+	// --- 3. Query paginated direct files ---
 	offset := (page - 1) * pageSize
-	end := offset + pageSize
-	if offset > total {
-		offset = total
+	var files []fileRow
+	if err := database.AppDB.Select(&files,
+		`SELECT id, filename, relative_path, file_type, duration, size
+		FROM media_files WHERE library_id = ? AND parent_dir = ?
+		ORDER BY filename LIMIT ? OFFSET ?`,
+		libraryID, pathPrefix, pageSize, offset); err != nil {
+		core.RespondInternalError(c)
+		return
 	}
-	if end > total {
-		end = total
-	}
-	pageFiles := directFiles[offset:end]
 
 	// Build file items with progress
-	items := buildFileItems(pageFiles, userID)
+	items := buildFileItems(files, userID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"path":      pathPrefix,

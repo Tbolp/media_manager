@@ -101,6 +101,12 @@ func upsertFile(ctx context.Context, lib *models.MediaLibrary, relativePath stri
 	filename := filepath.Base(relativePath)
 	ext := strings.ToLower(filepath.Ext(filename))
 
+	// Compute parent directory: "a/b/c.mp4" → "a/b", "c.mp4" → ""
+	parentDir := filepath.Dir(filepath.ToSlash(relativePath))
+	if parentDir == "." {
+		parentDir = ""
+	}
+
 	// Determine file type
 	fileType := "video"
 	if ext == ".jpg" || ext == ".png" {
@@ -138,28 +144,28 @@ func upsertFile(ctx context.Context, lib *models.MediaLibrary, relativePath stri
 		// Update existing record
 		if duration != nil {
 			_, err = database.AppDB.Exec(
-				`UPDATE media_files SET filename = ?, file_type = ?, duration = ?, size = ?, indexed_at = ?
+				`UPDATE media_files SET filename = ?, parent_dir = ?, file_type = ?, duration = ?, size = ?, indexed_at = ?
 				 WHERE id = ?`,
-				filename, fileType, *duration, size, now, existingID)
+				filename, parentDir, fileType, *duration, size, now, existingID)
 		} else {
 			_, err = database.AppDB.Exec(
-				`UPDATE media_files SET filename = ?, file_type = ?, size = ?, indexed_at = ?
+				`UPDATE media_files SET filename = ?, parent_dir = ?, file_type = ?, size = ?, indexed_at = ?
 				 WHERE id = ?`,
-				filename, fileType, size, now, existingID)
+				filename, parentDir, fileType, size, now, existingID)
 		}
 	} else {
 		// Insert new record
 		id := uuid.New().String()
 		if duration != nil {
 			_, err = database.AppDB.Exec(
-				`INSERT INTO media_files (id, library_id, filename, relative_path, file_type, duration, size, indexed_at)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-				id, lib.ID, filename, relativePath, fileType, *duration, size, now)
+				`INSERT INTO media_files (id, library_id, filename, relative_path, parent_dir, file_type, duration, size, indexed_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				id, lib.ID, filename, relativePath, parentDir, fileType, *duration, size, now)
 		} else {
 			_, err = database.AppDB.Exec(
-				`INSERT INTO media_files (id, library_id, filename, relative_path, file_type, size, indexed_at)
-				 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-				id, lib.ID, filename, relativePath, fileType, size, now)
+				`INSERT INTO media_files (id, library_id, filename, relative_path, parent_dir, file_type, size, indexed_at)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+				id, lib.ID, filename, relativePath, parentDir, fileType, size, now)
 		}
 	}
 
