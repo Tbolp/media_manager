@@ -18,6 +18,7 @@ import (
 	"media-manager/internal/middleware"
 	"media-manager/internal/queue"
 	"media-manager/internal/services"
+	"media-manager/migrations"
 )
 
 func main() {
@@ -33,10 +34,10 @@ func main() {
 	defer database.Close()
 
 	// Run migrations
-	if err := database.Migrate(database.AppDB.DB, "migrations/app"); err != nil {
+	if err := database.Migrate(database.AppDB.DB, migrations.AppFS, "app"); err != nil {
 		log.Fatalf("Failed to migrate app.db: %v", err)
 	}
-	if err := database.Migrate(database.LogsDB.DB, "migrations/logs"); err != nil {
+	if err := database.Migrate(database.LogsDB.DB, migrations.LogsFS, "logs"); err != nil {
 		log.Fatalf("Failed to migrate logs.db: %v", err)
 	}
 
