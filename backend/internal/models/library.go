@@ -15,12 +15,13 @@ type MediaLibrary struct {
 }
 
 type MediaFile struct {
-	ID           string        `db:"id" json:"id"`
-	LibraryID    string        `db:"library_id" json:"-"`
-	Filename     string        `db:"filename" json:"filename"`
-	RelativePath string        `db:"relative_path" json:"relative_path"`
-	FileType     string        `db:"file_type" json:"file_type"`
+	ID           string          `db:"id" json:"id"`
+	LibraryID    string          `db:"library_id" json:"-"`
+	Filename     string          `db:"filename" json:"filename"`
+	RelativePath string          `db:"relative_path" json:"relative_path"`
+	FileType     string          `db:"file_type" json:"file_type"`
 	Duration     sql.NullFloat64 `db:"duration" json:"-"`
 	Size         sql.NullInt64   `db:"size" json:"-"`
-	IndexedAt    time.Time     `db:"indexed_at" json:"-"`
+	IndexedAt    time.Time       `db:"indexed_at" json:"-"`
+	ParentDir    string          `db:"parent_dir" json:"-"`
 }
