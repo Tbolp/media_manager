@@ -482,21 +482,24 @@ class DlnaService {
   static String _buildSetUrlXml(String url, {String title = ''}) {
     final encodedUrl = _htmlEncode(url);
     final encodedTitle = _htmlEncode(title.isEmpty ? url : title);
+    // DIDL-Lite 元数据必须作为转义后的字符串传入 CurrentURIMetaData，
+    // 而不是直接嵌套 XML 子元素，否则严格遵循规范的设备会解析失败。
+    // protocolInfo 使用 */* 通配，兼容非 MP4 视频格式。
+    final didl = '<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">'
+        '<item id="0" parentID="0" restricted="0">'
+        '<dc:title>$encodedTitle</dc:title>'
+        '<upnp:class>object.item.videoItem</upnp:class>'
+        '<res protocolInfo="http-get:*:video/*:*">$encodedUrl</res>'
+        '</item>'
+        '</DIDL-Lite>';
+    final escapedDidl = _htmlEncode(didl);
     return '''<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
   <s:Body>
     <u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
       <InstanceID>0</InstanceID>
       <CurrentURI>$encodedUrl</CurrentURI>
-      <CurrentURIMetaData>
-        <DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">
-          <item id="0" parentID="0" restricted="0">
-            <dc:title>$encodedTitle</dc:title>
-            <upnp:class>object.item.videoItem</upnp:class>
-            <res protocolInfo="http-get:*:video/mp4:*">$encodedUrl</res>
-          </item>
-        </DIDL-Lite>
-      </CurrentURIMetaData>
+      <CurrentURIMetaData>$escapedDidl</CurrentURIMetaData>
     </u:SetAVTransportURI>
   </s:Body>
 </s:Envelope>''';

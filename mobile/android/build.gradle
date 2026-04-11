@@ -25,6 +25,17 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// media_kit_libs_android_video 硬编码了 compileSdk 36，aapt2 7.3.0 无法解析，强制降回 34
+subprojects { sub ->
+    if (sub.name != 'app') {
+        sub.afterEvaluate {
+            if (it.hasProperty('android')) {
+                it.android.compileSdkVersion 34
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
