@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend install build release clean
+.PHONY: dev dev-backend dev-frontend install build release release-apk clean
 
 # Go 路径（如不在 PATH 中，需指定）
 GO ?= $(shell which go 2>/dev/null || echo /usr/local/go/bin/go)
@@ -80,6 +80,15 @@ release:
 	@echo ""
 	@echo "  构建完成："
 	@ls -lh $(BUILD_DIR)/*.zip
+
+# 构建 Android 发布 APK
+release-apk:
+	@echo "==> 构建 Flutter Android 发布包..."
+	cd mobile && flutter build apk --release
+	@mkdir -p $(BUILD_DIR)
+	@cp mobile/build/app/outputs/flutter-apk/app-release.apk $(BUILD_DIR)/MediaManager-$(VERSION).apk
+	@echo ""
+	@echo "  APK 构建完成: $(BUILD_DIR)/MediaManager-$(VERSION).apk"
 
 # 清理构建产物
 clean:
