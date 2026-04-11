@@ -10,6 +10,11 @@ export async function getLibraries() {
   return res.data;
 }
 
+export async function getLibrary(id: string) {
+  const res = await client.get<Library>(`/libraries/${id}`);
+  return res.data;
+}
+
 export async function createLibrary(data: CreateLibraryRequest) {
   const res = await client.post<Library>('/libraries', data);
   return res.data;

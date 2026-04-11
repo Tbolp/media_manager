@@ -139,6 +139,7 @@ func setupRoutes(r *gin.Engine) {
 	// ── Library access routes (requires whitelist or admin) ──
 	libAccess := r.Group("", middleware.AuthMiddleware(), middleware.RequireLibraryAccess())
 	{
+		libAccess.GET("/api/libraries/:id", handlers.HandleGetLibrary)
 		libAccess.GET("/api/libraries/:id/files", handlers.HandleListFiles)
 		libAccess.POST("/api/libraries/:id/upload", handlers.HandleUpload)
 		libAccess.POST("/api/libraries/:id/refresh", handlers.HandleRefresh)

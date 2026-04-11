@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Alert } from 'antd';
 import { usePolling } from '@/hooks/usePolling';
-import { getLibraries } from '@/api/libraries';
+import { getLibrary } from '@/api/libraries';
 import type { RefreshStatus as RefreshStatusType } from '@/api/types';
 import { POLLING_INTERVAL } from '@/utils/constants';
 
@@ -20,9 +20,8 @@ export function RefreshStatus({ libraryId, initialStatus = 'idle', onRefreshComp
 
   usePolling(
     async () => {
-      const res = await getLibraries();
-      const lib = res.items.find((l) => l.id === libraryId);
-      const newStatus = lib?.refresh_status ?? 'idle';
+      const lib = await getLibrary(libraryId);
+      const newStatus = lib.refresh_status ?? 'idle';
       setStatus(newStatus);
       if (newStatus === 'idle') {
         onRefreshComplete?.();

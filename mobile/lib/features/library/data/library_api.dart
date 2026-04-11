@@ -19,8 +19,8 @@ class LibraryApi {
   }
 
   Future<LibraryModel> getLibrary(String id) async {
-    final libraries = await getLibraries();
-    return libraries.firstWhere((lib) => lib.id == id);
+    final resp = await _dio.get<Map<String, dynamic>>('/api/libraries/$id');
+    return LibraryModel.fromJson(resp.data!);
   }
 
   Future<DirectoryContent> listDirectory(

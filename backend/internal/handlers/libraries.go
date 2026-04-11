@@ -102,6 +102,29 @@ func HandleListLibraries(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"items": items})
 }
 
+// HandleGetLibrary returns a single library's name and refresh status.
+func HandleGetLibrary(c *gin.Context) {
+	libID := c.Param("id")
+
+	lib, err := services.GetLibraryByID(libID)
+	if err != nil || lib.IsDeleted {
+		core.RespondNotFound(c, "媒体库不存在")
+		return
+	}
+
+	refreshStatus := "idle"
+	if queueManager != nil {
+		refreshStatus = queueManager.GetRefreshStatus(lib.ID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":             lib.ID,
+		"name":           lib.Name,
+		"lib_type":       lib.LibType,
+		"refresh_status": refreshStatus,
+	})
+}
+
 // HandleCreateLibrary creates a new media library (admin only).
 func HandleCreateLibrary(c *gin.Context) {
 	admin := middleware.GetCurrentUser(c)

@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { Button, Skeleton, Empty, message, Input, Space } from 'antd';
 import { ReloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/auth';
-import { getFiles, getLibraries, refreshLibrary, renameLibrary } from '@/api/libraries';
+import { getFiles, getLibrary, refreshLibrary, renameLibrary } from '@/api/libraries';
 import { RefreshStatus } from '@/components/RefreshStatus';
 import { DEFAULT_PAGE_SIZE } from '@/utils/constants';
 import type { Library, FileItem, RefreshStatus as RefreshStatusType } from '@/api/types';
@@ -45,13 +45,11 @@ export default function LibraryPage() {
   const imageFiles = files.filter((f) => f.file_type === 'image');
 
   const fetchLibraryInfo = useCallback(async () => {
+    if (!libraryId) return;
     try {
-      const data = await getLibraries();
-      const lib = data.items.find((l) => l.id === libraryId);
-      if (lib) {
-        setLibrary(lib);
-        setRefreshStatus(lib.refresh_status);
-      }
+      const lib = await getLibrary(libraryId);
+      setLibrary(lib);
+      setRefreshStatus(lib.refresh_status);
     } catch {
       // 拦截器已处理
     }
