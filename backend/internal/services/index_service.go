@@ -174,9 +174,9 @@ func upsertFile(ctx context.Context, lib *models.MediaLibrary, relativePath stri
 
 func allowedExtensions(libType string) map[string]bool {
 	if libType == "camera" {
-		return map[string]bool{".mp4": true, ".jpg": true, ".png": true}
+		return map[string]bool{".mp4": true, ".mkv": true, ".jpg": true, ".png": true}
 	}
-	return map[string]bool{".mp4": true}
+	return map[string]bool{".mp4": true, ".mkv": true}
 }
 
 // GetVideoDuration calls ffprobe to read the duration of a video file.

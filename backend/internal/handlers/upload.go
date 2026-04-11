@@ -178,7 +178,7 @@ func extractFilename(contentDisposition string) string {
 
 func isAllowedExt(libType, ext string) bool {
 	if libType == "camera" {
-		return ext == ".mp4" || ext == ".jpg" || ext == ".png"
+		return ext == ".mp4" || ext == ".mkv" || ext == ".jpg" || ext == ".png"
 	}
-	return ext == ".mp4"
+	return ext == ".mp4" || ext == ".mkv"
 }

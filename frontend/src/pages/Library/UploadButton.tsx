@@ -18,7 +18,7 @@ export default function UploadButton({ libraryId, libType, currentPath, onUpload
   const upload = useUploadStore((s) => s.uploads[libraryId]);
   const { startUpload, updateProgress, finishUpload, cancelUpload, clearUpload } = useUploadStore();
 
-  const accept = libType === 'video' ? '.mp4' : '.mp4,.jpg,.png';
+  const accept = libType === 'video' ? '.mp4,.mkv' : '.mp4,.mkv,.jpg,.png';
   const isUploading = upload?.status === 'uploading';
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
