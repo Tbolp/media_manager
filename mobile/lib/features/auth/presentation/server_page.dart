@@ -62,7 +62,7 @@ class _ServerPageState extends ConsumerState<ServerPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.dns_outlined, size: 72, color: Colors.blue),
+                Icon(Icons.dns_outlined, size: 72, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(height: 32),
                 Text(
                   '请输入家庭影院服务器地址',
@@ -96,12 +96,12 @@ class _ServerPageState extends ConsumerState<ServerPage> {
                 FilledButton(
                   onPressed: _isSaving ? null : _save,
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onPrimary,
                           ),
                         )
                       : const Text('保存并继续'),

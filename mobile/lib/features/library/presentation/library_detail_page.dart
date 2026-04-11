@@ -480,11 +480,11 @@ class _DirGridTile extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: Colors.grey.shade200,
+                color: Theme.of(context).colorScheme.surfaceVariant,
                 child: Center(
                   child: Icon(
                     Icons.folder_outlined,
-                    color: Colors.grey.shade600,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 40,
                   ),
                 ),

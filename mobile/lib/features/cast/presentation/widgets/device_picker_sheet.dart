@@ -56,7 +56,7 @@ class _DevicePickerSheetState extends ConsumerState<DevicePickerSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade400,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -88,7 +88,7 @@ class _DevicePickerSheetState extends ConsumerState<DevicePickerSheet> {
             // 已连接设备
             if (castState.isConnected) ...[
               ListTile(
-                leading: const Icon(Icons.cast_connected, color: Colors.blue),
+                leading: Icon(Icons.cast_connected, color: Theme.of(context).colorScheme.primary),
                 title: Text(castState.device!.friendlyName),
                 subtitle: const Text('已连接'),
                 trailing: TextButton(
@@ -111,18 +111,18 @@ class _DevicePickerSheetState extends ConsumerState<DevicePickerSheet> {
                           Icon(
                             Icons.cast,
                             size: 48,
-                            color: Colors.grey.shade400,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             '正在搜索设备...',
-                            style: TextStyle(color: Colors.grey.shade600),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             '请确保手机和投屏设备在同一局域网',
                             style: TextStyle(
-                              color: Colors.grey.shade500,
+                              color: Theme.of(context).colorScheme.outline,
                               fontSize: 12,
                             ),
                           ),
@@ -141,7 +141,7 @@ class _DevicePickerSheetState extends ConsumerState<DevicePickerSheet> {
                             isConnected
                                 ? Icons.cast_connected
                                 : Icons.tv_outlined,
-                            color: isConnected ? Colors.blue : null,
+                            color: isConnected ? Theme.of(context).colorScheme.primary : null,
                           ),
                           title: Text(device.friendlyName),
                           subtitle: Text(

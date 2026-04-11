@@ -8,9 +8,10 @@ class RefreshBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
-      color: Colors.orange.shade100,
+      color: colorScheme.tertiaryContainer,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
@@ -22,7 +23,7 @@ class RefreshBanner extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             '正在刷新索引，文件列表可能未完整',
-            style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+            style: TextStyle(color: colorScheme.onTertiaryContainer, fontSize: 13),
           ),
         ],
       ),

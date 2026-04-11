@@ -84,7 +84,7 @@ class _CastControlPageState extends ConsumerState<CastControlPage> {
                       Icon(
                         Icons.tv,
                         size: 64,
-                        color: Colors.grey.shade400,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(height: 16),
                       Text(

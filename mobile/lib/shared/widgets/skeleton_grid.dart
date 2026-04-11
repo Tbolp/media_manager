@@ -12,9 +12,11 @@ class SkeletonGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: colorScheme.surfaceVariant,
+      highlightColor: colorScheme.surface,
       child: GridView.builder(
         padding: const EdgeInsets.all(8),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -31,7 +33,7 @@ class SkeletonGrid extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: Container(color: Colors.white),
+                child: Container(color: colorScheme.surfaceVariant),
               ),
               Padding(
                 padding:
@@ -42,7 +44,7 @@ class SkeletonGrid extends StatelessWidget {
                     Container(
                       height: 12,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -51,7 +53,7 @@ class SkeletonGrid extends StatelessWidget {
                       height: 12,
                       width: 80,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),

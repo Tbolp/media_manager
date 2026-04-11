@@ -36,9 +36,9 @@ class FileGridTile extends StatelessWidget {
                     imageUrl: thumbnailUrl,
                     fit: BoxFit.cover,
                     placeholder: (_, __) =>
-                        Container(color: Colors.grey.shade300),
+                        Container(color: Theme.of(context).colorScheme.surfaceVariant),
                     errorWidget: (_, __, ___) => Container(
-                      color: Colors.grey.shade300,
+                      color: Theme.of(context).colorScheme.surfaceVariant,
                       child: const Icon(Icons.broken_image_outlined),
                     ),
                   ),

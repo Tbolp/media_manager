@@ -116,15 +116,16 @@ class _PlaceholderCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.grey.shade200,
+      color: colorScheme.surfaceVariant,
       child: Center(
         child: Icon(
           library.isCamera
               ? Icons.camera_alt_outlined
               : Icons.movie_outlined,
           size: 40,
-          color: Colors.grey.shade400,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );
