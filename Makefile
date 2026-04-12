@@ -68,7 +68,6 @@ release:
 		mkdir -p $${pkg_dir}; \
 		cd backend && CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch \
 			$(GO) build -ldflags="-s -w" -o ../$${pkg_dir}/$(BINARY_NAME)$${ext} ./cmd/server && cd ..; \
-		cp -r backend/migrations $${pkg_dir}/migrations; \
 		printf '# MediaManager\n\n' > $${pkg_dir}/README.txt; \
 		printf '## 运行\n\n  ./$(BINARY_NAME)'"$$ext"'\n\n' >> $${pkg_dir}/README.txt; \
 		printf '## 依赖\n\n  ffmpeg / ffprobe 需预装并加入 PATH\n\n' >> $${pkg_dir}/README.txt; \
