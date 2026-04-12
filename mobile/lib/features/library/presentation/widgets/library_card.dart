@@ -12,12 +12,14 @@ class LibraryCard extends StatefulWidget {
     required this.thumbnailUrl,
     required this.onTap,
     required this.onRefresh,
+    this.onUpload,
   });
 
   final LibraryModel library;
   final String? thumbnailUrl;
   final VoidCallback onTap;
   final Future<void> Function() onRefresh;
+  final VoidCallback? onUpload;
 
   @override
   State<LibraryCard> createState() => _LibraryCardState();
@@ -62,29 +64,51 @@ class _LibraryCardState extends State<LibraryCard> {
                   Positioned(
                     right: 4,
                     bottom: 4,
-                    child: GestureDetector(
-                      onTap: _triggerRefresh,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.black38,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: _refreshLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.refresh_outlined,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.onUpload != null)
+                          GestureDetector(
+                            onTap: widget.onUpload,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black38,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(
+                                Icons.upload_outlined,
                                 size: 16,
                                 color: Colors.white,
                               ),
-                      ),
+                            ),
+                          ),
+                        if (widget.onUpload != null) const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: _triggerRefresh,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.black38,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: _refreshLoading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.refresh_outlined,
+                                    size: 16,
+                                    color: Colors.white,
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

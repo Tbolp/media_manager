@@ -2,6 +2,7 @@
 // 媒体库详情页（目录浏览 + 搜索 + 刷新感知）
 
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../../core/router/routes.dart';
 import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../features/cast/presentation/providers/cast_provider.dart';
 import '../../../features/settings/providers/settings_provider.dart';
+import '../../../features/upload/presentation/providers/upload_provider.dart';
 import '../../../shared/utils/url_builder.dart';
 import '../../../shared/widgets/skeleton_grid.dart';
 import '../../../shared/widgets/empty_state.dart';
@@ -51,6 +53,39 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
     _debounceTimer = Timer(AppConstants.searchDebounce, () {
       if (mounted) setState(() => _searchKeyword = value);
     });
+  }
+
+  Future<void> _pickAndUpload(
+    BuildContext context,
+    WidgetRef ref,
+    String currentPath,
+  ) async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      type: FileType.any,
+    );
+    if (result == null || result.files.isEmpty) return;
+    if (!context.mounted) return;
+
+    final files = result.files
+        .where((f) => f.path != null)
+        .map((f) => (
+              filePath: f.path!,
+              filename: f.name,
+              fileSize: f.size,
+            ))
+        .toList();
+
+    if (files.isEmpty) return;
+
+    ref.read(uploadNotifierProvider.notifier).addTasks(
+          libraryId: widget.libraryId,
+          subPath: currentPath,
+          files: files,
+        );
+
+    // 跳转上传页
+    context.push('/library/${widget.libraryId}/upload');
   }
 
   @override
@@ -134,6 +169,12 @@ class _LibraryDetailPageState extends ConsumerState<LibraryDetailPage> {
               },
             ),
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _pickAndUpload(context, ref, currentPath),
+          tooltip: '上传文件',
+          shape: const CircleBorder(),
+          child: const Icon(Icons.arrow_upward),
         ),
         body: Column(
           children: [

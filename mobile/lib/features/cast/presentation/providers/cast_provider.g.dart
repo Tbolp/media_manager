@@ -20,7 +20,7 @@ final dlnaServiceProvider = Provider<DlnaService>.internal(
 );
 
 typedef DlnaServiceRef = ProviderRef<DlnaService>;
-String _$castNotifierHash() => r'2bd7f2c7d5990c7e4fae32172eda12ad63e7af8c';
+String _$castNotifierHash() => r'3e1a2e0b62983c435b05ae66232ccb85253950e0';
 
 /// See also [CastNotifier].
 @ProviderFor(CastNotifier)

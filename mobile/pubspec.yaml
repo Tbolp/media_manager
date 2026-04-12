@@ -48,6 +48,12 @@ dependencies:
   # DLNA 投屏（XML 解析）
   xml: ^6.5.0
 
+  # 文件选择
+  file_picker: ^8.0.0
+
+  # UUID 生成
+  uuid: ^4.0.0
+
   cupertino_icons: ^1.0.6
 
 dev_dependencies:

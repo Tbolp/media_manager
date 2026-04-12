@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Rules
+
+- **禁止在仓库中创建临时分析/文档/中间文件**（如 `*_ANALYSIS.md`、`*_EXPLORATION.md`、`*_GUIDE.md` 等）。探索和分析结果应直接输出在对话中，不要写入文件。
+
 ## Repository Layout
 
 This is a monorepo for **家庭影院 (Home Cinema)** — a self-hosted media server system:

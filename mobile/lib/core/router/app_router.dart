@@ -11,6 +11,7 @@ import '../../features/cast/presentation/cast_control_page.dart';
 import '../../features/library/presentation/home_page.dart';
 import '../../features/library/presentation/library_detail_page.dart';
 import '../../features/player/presentation/video_player_page.dart';
+import '../../features/upload/presentation/upload_page.dart';
 import '../../features/settings/providers/settings_provider.dart';
 import 'routes.dart';
 
@@ -90,6 +91,12 @@ GoRouter appRouter(AppRouterRef ref) {
       GoRoute(
         path: kRouteCastControl,
         builder: (_, __) => const CastControlPage(),
+      ),
+      GoRoute(
+        path: kRouteUpload,
+        builder: (_, state) => UploadPage(
+          libraryId: state.pathParameters['libraryId']!,
+        ),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(
