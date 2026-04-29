@@ -9,6 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
+
     - name: Build Android bundle
       uses: AcmeSoftwareLLC/flutter-build@v2
       with:
@@ -19,5 +21,5 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v3.0.0
       with:
-        files: build/app/outputs/flutter-apk/*.apk
+        files: mobile/build/app/outputs/flutter-apk/*.apk
     
