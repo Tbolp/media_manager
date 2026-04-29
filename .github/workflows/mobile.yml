@@ -1,0 +1,23 @@
+name: Flutter CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Build Android bundle
+      uses: AcmeSoftwareLLC/flutter-build@v2
+      with:
+        flutter-version: "3.19.6"         # 🐦 Optional: Flutter version
+        working-directory: mobile         # 📁 Optional: defaults to .
+        script: flutter build apk --release # 🛠️ Optional: custom build script
+
+    - name: Release
+      uses: softprops/action-gh-release@v3.0.0
+      with:
+        files: build/app/outputs/flutter-apk/*.apk
+    
