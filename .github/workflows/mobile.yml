@@ -18,8 +18,9 @@ jobs:
         working-directory: mobile         # 📁 Optional: defaults to .
         script: flutter build apk --release # 🛠️ Optional: custom build script
 
-    - name: Release
-      uses: softprops/action-gh-release@v3.0.0
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
       with:
-        files: mobile/build/app/outputs/flutter-apk/*.apk
+        name: app-release
+        path: mobile/build/app/outputs/flutter-apk/*.apk
     
